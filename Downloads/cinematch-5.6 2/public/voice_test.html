@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gizli AI Voice Agent</title>
+    <style>
+        body { font-family: 'Lato', sans-serif; background-color: #121212; color: #ffffff; text-align: center; padding: 50px; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #1e1e1e; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        h1 { color: #0fb333; }
+        button { background-color: #0fb333; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 5px; cursor: pointer; transition: 0.3s; margin-top: 20px; }
+        button:hover { background-color: #0c8f28; }
+        button:disabled { background-color: #555; cursor: not-allowed; }
+        button.stop { background-color: #b3261e; }
+        button.stop:hover { background-color: #8f1f19; }
+        .profile { display: grid; gap: 10px; margin-top: 20px; text-align: left; }
+        label { color: #ccc; font-size: 13px; }
+        input { box-sizing: border-box; width: 100%; margin-top: 5px; padding: 10px; color: #fff; background: #292929; border: 1px solid #444; border-radius: 5px; }
+        #status { margin-top: 20px; font-size: 14px; color: #aaa; }
+        /* Asistanın sesini çalmak için gizli player */
+        audio { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>CineMatch Voice Agent</h1>
+        <p>Yapay zeka ajanıyla sesli olarak konuşmak için bağlanın.</p>
+
+        <div class="profile">
+            <label>Voice API adresi
+                <input id="apiBaseUrl" value="https://cinematchbotai.onrender.com" placeholder="https://api.example.com" autocomplete="url">
+            </label>
+            <label>Voice API anahtarı
+                <input id="voiceApiKey" type="password" value="43d2919d6378dc851f63f84394d52640710b81cbb3eec51bb51f75eb84f28bfb" placeholder="VOICE_API_KEY" autocomplete="off">
+            </label>
+            <label>Kullanıcı ID
+                <input id="userId" value="voice-test-user" autocomplete="off">
+            </label>
+            <label>Kullanıcı adı
+                <input id="username" value="Voice Test" autocomplete="name">
+            </label>
+            <label>Favori türler (virgülle ayırın)
+                <input id="favoriteGenres" placeholder="Bilim Kurgu, Dram">
+            </label>
+        </div>
+      
+        
+        <button id="startButton">Mikrofonu Bağla ve Başla</button>
+        <button id="stopButton" class="stop" disabled>Bağlantıyı Kes</button>
+        <div id="status">Durum: Bekleniyor...</div>
+
+        <!-- Sunucudan dönen sesi çalmak için -->
+        <audio id="remoteAudio" autoplay></audio>
+    </div>
+
+    <script type="text/plain" id="legacy-webrtc-client">
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const statusDiv = document.getElementById('status');
+        const remoteAudio = document.getElementById('remoteAudio');
+        
+        let pc;
+        let localStream;
+        let controlChannel;
+        let audioContext;
+        let vadAnimationFrame;
+        let assistantSpeaking = false;
+        let localInterruptSent = false;
+
+        function startLocalVoiceDetection(stream) {
+            audioContext = new AudioContext();
+            const source = audioContext.createMediaStreamSource(stream);
+            const analyser = audioContext.createAnalyser();
+            analyser.fftSize = 512;
+            analyser.smoothingTimeConstant = 0.25;
+            source.connect(analyser);
+
+            const samples = new Float32Array(analyser.fftSize);
+            let loudFrameCount = 0;
+
+            const detectVoice = () => {
+                analyser.getFloatTimeDomainData(samples);
+                let energy = 0;
+                for (const sample of samples) {
+                    energy += sample * sample;
+                }
+                const rms = Math.sqrt(energy / samples.length);
+
+                // Yaklaşık 3 ardışık animasyon karesi (~40-60 ms) boyunca
+                // belirgin mikrofon sesi varsa, STT sonucunu beklemeden kes.
+                loudFrameCount = rms > 0.045 ? loudFrameCount + 1 : 0;
+                if (
+                    assistantSpeaking
+                    && !localInterruptSent
+                    && loudFrameCount >= 3
+                ) {
+                    localInterruptSent = true;
+                    assistantSpeaking = false;
+                    remoteAudio.muted = true;
+                    statusDiv.innerText = "Durum: Seni dinliyorum...";
+                    if (controlChannel?.readyState === 'open') {
+                        controlChannel.send(JSON.stringify({ action: 'interrupt' }));
+                    }
+                }
+
+                vadAnimationFrame = requestAnimationFrame(detectVoice);
+            };
+            detectVoice();
+        }
+
+        const commaSeparatedValues = (elementId) => (
+            document.getElementById(elementId).value
+                .split(',')
+                .map(value => value.trim())
+                .filter(Boolean)
+        );
+
+        function getVoiceApiSettings() {
+            const baseUrl = document.getElementById('apiBaseUrl').value
+                .trim()
+                .replace(/\/+$/, '');
+            const apiKey = document.getElementById('voiceApiKey').value.trim();
+
+            if (!baseUrl) {
+                throw new Error("Voice API adresini girin.");
+            }
+            if (!apiKey) {
+                throw new Error("Voice API anahtarını girin.");
+            }
+
+            return { baseUrl, apiKey };
+        }
+
+        function waitForIceGatheringComplete(peerConnection) {
+            if (peerConnection.iceGatheringState === 'complete') {
+                return Promise.resolve();
+            }
+
+            return new Promise(resolve => {
+                const checkState = () => {
+                    if (peerConnection.iceGatheringState === 'complete') {
+                        peerConnection.removeEventListener('icegatheringstatechange', checkState);
+                        resolve();
+                    }
+                };
+                peerConnection.addEventListener('icegatheringstatechange', checkState);
+            });
+        }
+
+        function stopWebRTC(message = "Durum: Bağlantı kapatıldı.") {
+            if (vadAnimationFrame) {
+                cancelAnimationFrame(vadAnimationFrame);
+                vadAnimationFrame = null;
+            }
+            if (audioContext) {
+                audioContext.close().catch(() => {});
+                audioContext = null;
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            if (pc) {
+                pc.close();
+                pc = null;
+            }
+            remoteAudio.srcObject = null;
+            remoteAudio.muted = false;
+            controlChannel = null;
+            assistantSpeaking = false;
+            localInterruptSent = false;
+            statusDiv.innerText = message;
+            startButton.disabled = false;
+            stopButton.disabled = true;
+        }
+
+        async function startWebRTC() {
+            stopWebRTC("Durum: Yeni bağlantı hazırlanıyor...");
+            startButton.disabled = true;
+            stopButton.disabled = false;
+            statusDiv.innerText = "Durum: Mikrofona erişiliyor...";
+
+            try {
+                const { baseUrl, apiKey } = getVoiceApiSettings();
+
+                // 1. Tarayıcıdan mikrofon izni iste ve akışı al
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        channelCount: 1,
+                        sampleRate: 48000,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+                
+                // 2. WebRTC PeerConnection oluştur
+                pc = new RTCPeerConnection({
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' }
+                    ]
+                });
+                const activePc = pc;
+
+                // Sunucu, kullanıcı araya girdiği anda tarayıcıdaki oynatma
+                // tamponunu da susturabilsin. Yalnızca sunucu tamponunu
+                // temizlemek, daha önce ulaşmış RTP paketlerini durduramaz.
+                controlChannel = activePc.createDataChannel('cinematch-control');
+                controlChannel.addEventListener('message', (event) => {
+                    try {
+                        const message = JSON.parse(event.data);
+                        if (message.action === 'interrupt') {
+                            assistantSpeaking = false;
+                            localInterruptSent = true;
+                            remoteAudio.muted = true;
+                            statusDiv.innerText = "Durum: Seni dinliyorum...";
+                        } else if (message.action === 'resume') {
+                            assistantSpeaking = true;
+                            localInterruptSent = false;
+                            remoteAudio.muted = false;
+                            statusDiv.innerText = "Durum: Asistan konuşuyor...";
+                            remoteAudio.play().catch(
+                                err => console.warn("Ses yeniden başlatılamadı:", err)
+                            );
+                        }
+                    } catch (err) {
+                        console.warn("Geçersiz kontrol mesajı:", err);
+                    }
+                });
+
+                // 3. Mikrofon sesini (track) bağlantıya ekle
+                localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+                startLocalVoiceDetection(localStream);
+
+                // 4. Sunucudan ses geldiğinde (AJANIN CEVABI) bu tetiklenir
+                activePc.addEventListener('track', (evt) => {
+                    if (evt.track.kind === 'audio') {
+                        statusDiv.innerText = "Durum: Asistan konuşuyor...";
+                        remoteAudio.srcObject = evt.streams[0] || new MediaStream([evt.track]);
+                        remoteAudio.play().catch(err => console.warn("Ses otomatik oynatılamadı:", err));
+                    }
+                });
+
+                // 5. Bağlantı durumunu ekrana yazdır
+                activePc.addEventListener('connectionstatechange', () => {
+                    if (activePc.connectionState === 'connected') {
+                        statusDiv.innerText = "Durum: Bağlandı! Şimdi konuşabilirsiniz.";
+                    } else if (
+                        pc === activePc
+                        && ['failed', 'disconnected', 'closed'].includes(activePc.connectionState)
+                    ) {
+                        stopWebRTC("Durum: Bağlantı kapandı.");
+                    }
+                });
+
+                // 6. Offer (Teklif) oluştur
+                const offer = await activePc.createOffer();
+                await activePc.setLocalDescription(offer);
+                await waitForIceGatheringComplete(activePc);
+
+                statusDiv.innerText = "Durum: Sunucuya bağlanılıyor (Offer gönderildi)...";
+
+                // 7. Offer'ı metin API'siyle aynı dış adresteki voice endpoint'e gönder
+                const response = await fetch(`${baseUrl}/api/voice/offer`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Voice-Api-Key': apiKey
+                    },
+                    body: JSON.stringify({
+                        sdp: activePc.localDescription.sdp,
+                        type: activePc.localDescription.type,
+                        user_id: document.getElementById('userId').value.trim() || 'voice-test-user',
+                        username: document.getElementById('username').value.trim() || 'Voice Test',
+                        favorite_genres: commaSeparatedValues('favoriteGenres'),
+                        favorite_directors: [],
+                        favorite_actors: [],
+                        favorite_movies: []
+                    })
+                });
+
+                // 8. Sunucudan gelen Answer'ı kaydet
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Sunucu ${response.status}: ${errorText || response.statusText}`);
+                }
+                const answer = await response.json();
+                await activePc.setRemoteDescription(answer);
+
+            } catch (err) {
+                console.error("Hata:", err);
+                stopWebRTC("Hata: " + err.message);
+            }
+        }
+
+        startButton.addEventListener('click', startWebRTC);
+        stopButton.addEventListener('click', () => stopWebRTC());
+        window.addEventListener('beforeunload', () => stopWebRTC());
+    </script>
+    <script src="/voice_test.js?v=streaming-20260727-4"></script>
+</body>
+</html>

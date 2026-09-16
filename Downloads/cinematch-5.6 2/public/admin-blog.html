@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CineMatch Blog Paneli</title>
+    <link rel="apple-touch-icon" href="/images/app_logo.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="images/favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="images/favicon/favicon-16x16.png" />
+    <link rel="stylesheet" href="css/admin-news.css?v=20260801-1" />
+    <link rel="stylesheet" href="css/admin-blog.css?v=20260801-2" />
+  </head>
+  <body>
+    <main class="admin-shell">
+      <section id="authLoadingPanel" class="auth-panel auth-loading" aria-live="polite">
+        <div class="brand-lockup">
+          <img src="images/app_logo.png" alt="CineMatch" />
+          <div><p>Yönetim Paneli</p><h1>Oturum kontrol ediliyor…</h1></div>
+        </div>
+        <div class="auth-spinner" aria-hidden="true"></div>
+      </section>
+
+      <section id="loginPanel" class="auth-panel hidden">
+        <div class="brand-lockup">
+          <img src="images/app_logo.png" alt="CineMatch" />
+          <div><p>Yönetim Paneli</p><h1>CineMatch Blog</h1></div>
+        </div>
+        <form id="loginForm" class="panel-card auth-form">
+          <label>
+            CineMatch e-postası
+            <input id="loginEmail" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            Şifre
+            <input id="loginPassword" type="password" autocomplete="current-password" required />
+          </label>
+          <button id="loginButton" type="submit">Giriş Yap</button>
+          <p id="loginMessage" class="message" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section id="adminPanel" class="workspace blog-workspace hidden">
+        <aside class="sidebar blog-sidebar">
+          <div class="brand-lockup compact">
+            <img src="images/app_logo.png" alt="CineMatch" />
+            <div><p>Blog Paneli</p><h1>CineMatch</h1></div>
+          </div>
+          <nav class="panel-nav blog-nav">
+            <a href="/admin-news">Haberler</a>
+            <a class="active" href="/admin-blog">Blog</a>
+            <a href="/admin-trivia">Soru Yarışması</a>
+            <a href="/admin-announcements">Duyurular</a>
+            <a href="/admin-bot">Bot Paneli</a>
+            <a href="/admin-social">Sosyal Medya</a>
+          </nav>
+
+          <button id="newPostButton" class="primary-action" type="button">Yeni Yazı</button>
+          <div class="article-toolbar">
+            <div><p>Blog Yazıları</p><strong id="postCount">0 yazı</strong></div>
+            <input id="postSearch" type="search" placeholder="Başlık, film veya yazar ara" />
+            <select id="postStatusFilter">
+              <option value="all">Tüm durumlar</option>
+              <option value="draft">Taslak</option>
+              <option value="published">Yayında</option>
+              <option value="archived">Arşiv</option>
+            </select>
+          </div>
+          <div class="article-list" id="postList"></div>
+          <button id="loadMorePostsButton" class="secondary-action hidden" type="button">Daha Fazla Yükle</button>
+
+          <section id="bloggerManager" class="blogger-manager hidden">
+            <details>
+              <summary>Blogger Yetkileri</summary>
+              <p>Uygulamadaki kullanıcı adına göre blogger seç.</p>
+              <div class="blogger-search-row">
+                <input id="bloggerSearch" type="search" placeholder="Kullanıcı adı ara" />
+                <button id="bloggerSearchButton" type="button" aria-label="Kullanıcı ara">Ara</button>
+              </div>
+              <p id="bloggerMessage" class="message" aria-live="polite"></p>
+              <div id="bloggerResults" class="blogger-list"></div>
+              <strong class="blogger-list-title">Yetkili bloggerlar</strong>
+              <div id="activeBloggers" class="blogger-list"></div>
+            </details>
+          </section>
+        </aside>
+
+        <section class="editor blog-editor-shell">
+          <header class="editor-header blog-header">
+            <div class="author-lockup">
+              <div id="authorAvatar" class="author-avatar" aria-hidden="true">C</div>
+              <div><p id="currentUserLabel">Blogger</p><h2 id="editorHeading">Yeni Blog Yazısı</h2></div>
+            </div>
+            <div class="header-actions">
+              <span id="dirtyLabel" class="save-state hidden">Kaydedilmemiş değişiklik</span>
+              <button id="logoutButton" type="button">Çıkış</button>
+            </div>
+          </header>
+
+          <form id="postForm" class="panel-card blog-form">
+            <input id="postId" type="hidden" />
+
+            <section class="form-section intro-section">
+              <div class="form-grid two blog-meta-grid">
+                <label>
+                  Durum
+                  <select id="status">
+                    <option value="draft">Taslak</option>
+                    <option value="published">Yayında</option>
+                    <option value="archived">Arşiv</option>
+                  </select>
+                </label>
+                <label>
+                  Kategori
+                  <select id="category">
+                    <option value="İnceleme">İnceleme</option>
+                    <option value="Liste">Liste</option>
+                    <option value="Dosya">Dosya</option>
+                    <option value="Röportaj">Röportaj</option>
+                    <option value="Gündem">Gündem</option>
+                    <option value="Kişisel">Kişisel</option>
+                  </select>
+                </label>
+              </div>
+
+              <label class="title-field">
+                Yazı Başlığı
+                <input id="title" type="text" maxlength="180" required placeholder="Okuru yazıya davet eden başlık" />
+              </label>
+
+              <label>
+                Kısa Açıklama
+                <textarea id="excerpt" rows="3" maxlength="360" placeholder="Uygulamadaki blog kartında görünecek kısa özet"></textarea>
+                <small><span id="excerptCount">0</span>/360 karakter</small>
+              </label>
+            </section>
+
+            <section class="form-section movie-section" aria-labelledby="movieSectionTitle">
+              <div class="section-heading blog-section-heading">
+                <div><p>TMDB bağlantısı</p><h3 id="movieSectionTitle">Filmleri Etiketle</h3></div>
+                <span id="movieCount" class="count-badge">0 / 10</span>
+              </div>
+              <div class="movie-search-row">
+                <input id="movieSearch" type="search" autocomplete="off" placeholder="Film adı yaz (örn. Paris, Texas)" />
+                <button id="movieSearchButton" class="secondary-button" type="button">Film Ara</button>
+              </div>
+              <p id="movieMessage" class="message" aria-live="polite"></p>
+              <div id="movieSearchResults" class="movie-results hidden"></div>
+              <div id="selectedMovies" class="selected-movies">
+                <p class="empty-inline">Henüz film etiketlenmedi.</p>
+              </div>
+            </section>
+
+            <section class="form-section content-section" aria-labelledby="contentSectionTitle">
+              <div class="section-heading blog-section-heading">
+                <div><p>Zengin metin editörü</p><h3 id="contentSectionTitle">Yazı İçeriği</h3></div>
+                <input id="imageInput" class="hidden" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple />
+              </div>
+
+              <div id="editorToolbar" class="editor-toolbar" role="toolbar" aria-label="Metin biçimlendirme">
+                <button id="uploadImageButton" class="image-upload-button" type="button" title="Görsel ekle">＋ Görsel</button>
+                <span class="toolbar-divider"></span>
+                <button type="button" data-command="bold" title="Kalın"><strong>B</strong></button>
+                <button type="button" data-command="italic" title="İtalik"><em>I</em></button>
+                <button type="button" data-command="underline" title="Altı çizili"><u>U</u></button>
+                <span class="toolbar-divider"></span>
+                <button type="button" data-block="p">Paragraf</button>
+                <button type="button" data-block="h2">Başlık 2</button>
+                <button type="button" data-block="h3">Başlık 3</button>
+                <button type="button" data-block="blockquote">Alıntı</button>
+                <span class="toolbar-divider"></span>
+                <button type="button" data-command="insertUnorderedList" title="Madde işaretli liste">• Liste</button>
+                <button type="button" data-command="insertOrderedList" title="Numaralı liste">1. Liste</button>
+                <button type="button" data-action="link" title="Bağlantı ekle">Bağlantı</button>
+                <button type="button" data-command="undo" title="Geri al">↶</button>
+                <button type="button" data-command="redo" title="Yinele">↷</button>
+              </div>
+
+              <div id="contentEditor" class="content-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Yazını buraya yaz. Görseli ekledikten sonra tutup istediğin paragraf aralığına sürükleyebilirsin."></div>
+              <div class="editor-footnote">
+                <span id="contentStats">0 kelime · yaklaşık 0 dk okuma</span>
+                <span id="uploadProgress" class="message" aria-live="polite"></span>
+              </div>
+            </section>
+
+            <section class="form-section optional-section">
+              <details>
+                <summary>Kapak, etiket ve bağlantı ayarları</summary>
+                <div class="optional-fields">
+                  <label>
+                    Kapak Görseli
+                    <div class="cover-field">
+                      <input id="coverImageUrl" type="url" placeholder="İçerikteki bir görseli seçebilir veya URL girebilirsin" />
+                      <button id="useFirstImageButton" class="secondary-button" type="button">İlk Görseli Kullan</button>
+                    </div>
+                  </label>
+                  <label>
+                    Etiketler
+                    <input id="tags" type="text" placeholder="sinematografi, western, Wim Wenders" />
+                    <small>Virgülle ayır; en fazla 12 etiket.</small>
+                  </label>
+                  <label>
+                    Yazı bağlantısı (slug)
+                    <input id="slug" type="text" maxlength="120" placeholder="paris-texas-uzerine" />
+                  </label>
+                </div>
+              </details>
+            </section>
+
+            <footer class="editor-actions blog-actions">
+              <button id="deleteButton" class="danger" type="button" disabled>Yazıyı Sil</button>
+              <div>
+                <span id="saveMessage" class="message" aria-live="polite"></span>
+                <button id="saveButton" type="submit">Yazıyı Kaydet</button>
+              </div>
+            </footer>
+          </form>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <script src="js/admin-shared.js?v=20260801-1"></script>
+    <script src="js/admin-blog.js?v=20260801-2"></script>
+  </body>
+</html>

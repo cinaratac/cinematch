@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CineMatch Soru Yarışması Paneli</title>
+    <link rel="apple-touch-icon" href="/images/app_logo.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="images/favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="images/favicon/favicon-16x16.png" />
+    <link rel="stylesheet" href="css/admin-trivia.css?v=20260801-1" />
+  </head>
+  <body>
+    <main class="admin-shell">
+      <section id="authLoadingPanel" class="auth-panel auth-loading" aria-live="polite">
+        <div class="brand-lockup">
+          <img src="images/app_logo.png" alt="CineMatch" />
+          <div><p>Yönetim Paneli</p><h1>Oturum kontrol ediliyor…</h1></div>
+        </div>
+        <div class="auth-spinner" aria-hidden="true"></div>
+      </section>
+
+      <section id="loginPanel" class="auth-panel hidden">
+        <div class="brand-lockup">
+          <img src="images/app_logo.png" alt="CineMatch" />
+          <div>
+            <p>Yönetim Paneli</p>
+            <h1>Soru Yarışması</h1>
+          </div>
+        </div>
+
+        <form id="loginForm" class="panel-card auth-form">
+          <label>
+            E-posta
+            <input id="loginEmail" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            Şifre
+            <input id="loginPassword" type="password" autocomplete="current-password" required />
+          </label>
+          <button id="loginButton" type="submit">Giriş Yap</button>
+          <p id="loginMessage" class="message"></p>
+        </form>
+      </section>
+
+      <section id="adminPanel" class="workspace hidden">
+        <aside class="sidebar">
+          <div class="brand-lockup compact">
+            <img src="images/app_logo.png" alt="CineMatch" />
+            <div>
+              <p>Trivia Paneli</p>
+              <h1>CineMatch</h1>
+            </div>
+          </div>
+
+          <nav class="panel-nav">
+            <a href="/admin-news">Haber Paneli</a>
+            <a href="/admin-blog">Blog</a>
+            <a class="active" href="/admin-trivia">Soru Yarışması</a>
+            <a href="/admin-announcements">Duyurular</a>
+            <a href="/admin-bot">Bot Paneli</a>
+            <a href="/admin-social">Sosyal Medya</a>
+          </nav>
+
+          <button id="newQuestionButton" class="primary-action" type="button">Yeni Soru</button>
+
+          <div class="question-toolbar">
+            <div>
+              <p>Mevcut Sorular</p>
+              <strong id="questionCount">0 soru</strong>
+            </div>
+            <input id="questionSearch" type="search" placeholder="Soru ara" />
+            <div class="toolbar-grid">
+              <select id="weekFilter"></select>
+              <select id="activeFilter">
+                <option value="all">Tüm durumlar</option>
+                <option value="active">Yayında</option>
+                <option value="inactive">Kapalı</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="question-list" id="questionList"></div>
+          <button id="loadMoreQuestionsButton" class="secondary-action hidden" type="button">Daha Fazla Yükle</button>
+        </aside>
+
+        <section class="editor">
+          <header class="editor-header">
+            <div>
+              <p id="currentUserLabel">Editör</p>
+              <h2>Soru Düzenle</h2>
+            </div>
+            <button id="logoutButton" type="button">Çıkış</button>
+          </header>
+
+          <section class="week-strip">
+            <button id="currentWeekButton" type="button"></button>
+            <button id="nextWeekButton" type="button"></button>
+          </section>
+
+          <form id="questionForm" class="panel-card editor-form">
+            <input id="questionId" type="hidden" />
+
+            <div class="form-grid three">
+              <label>
+                Hafta ID
+                <input id="weekId" type="text" required placeholder="2026_W27" />
+              </label>
+              <label>
+                Zorluk
+                <select id="difficulty">
+                  <option value="kolay">Kolay</option>
+                  <option value="orta">Orta</option>
+                  <option value="zor">Zor</option>
+                </select>
+              </label>
+              <label class="toggle-row">
+                <span>Yayında</span>
+                <input id="isActive" type="checkbox" checked />
+              </label>
+            </div>
+
+            <label>
+              Soru Metni
+              <textarea id="question" rows="4" maxlength="500" required placeholder="Örn. Matrix filminde Neo'ya sunulan hapların renkleri hangileridir?"></textarea>
+            </label>
+
+            <div class="options-grid">
+              <label>
+                A Şıkkı
+                <input id="option0" type="text" maxlength="180" required />
+              </label>
+              <label>
+                B Şıkkı
+                <input id="option1" type="text" maxlength="180" required />
+              </label>
+              <label>
+                C Şıkkı
+                <input id="option2" type="text" maxlength="180" required />
+              </label>
+              <label>
+                D Şıkkı
+                <input id="option3" type="text" maxlength="180" required />
+              </label>
+            </div>
+
+            <label>
+              Doğru Şık
+              <select id="correctIndex">
+                <option value="0">A</option>
+                <option value="1">B</option>
+                <option value="2">C</option>
+                <option value="3">D</option>
+              </select>
+            </label>
+
+            <label>
+              Görsel URL
+              <input id="imageUrl" type="url" placeholder="https://..." />
+            </label>
+
+            <label>
+              Açıklama
+              <textarea id="explanation" rows="3" maxlength="800" placeholder="Opsiyonel editör notu veya cevap açıklaması"></textarea>
+            </label>
+
+            <footer class="editor-actions">
+              <button id="deleteButton" class="danger" type="button">Sil</button>
+              <div>
+                <span id="saveMessage" class="message"></span>
+                <button id="saveButton" type="submit">Kaydet</button>
+              </div>
+            </footer>
+          </form>
+
+          <section class="panel-card bulk-panel">
+            <header>
+              <div>
+                <p>Toplu Yükleme</p>
+                <h3>JSON ile soru ekle</h3>
+              </div>
+              <button id="loadSampleButton" type="button">Örnek Doldur</button>
+            </header>
+            <label>
+              Hedef Hafta
+              <input id="bulkWeekId" type="text" required placeholder="2026_W27" />
+            </label>
+            <label>
+              JSON
+              <textarea id="bulkJson" rows="10" placeholder='[{"question":"...","options":["A","B","C","D"],"correctIndex":0}]'></textarea>
+            </label>
+            <footer class="editor-actions">
+              <span id="bulkMessage" class="message"></span>
+              <button id="bulkSaveButton" type="button">Toplu Yükle</button>
+            </footer>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
+    <script src="js/admin-shared.js"></script>
+    <script src="js/admin-trivia.js?v=20260722-1"></script>
+  </body>
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CineMatch - Sinema Gündemi</title>
+    <meta
+      name="description"
+      content="CineMatch sinema gündemi, film haberleri, vizyon notları ve eleştiriler."
+    />
+    <link rel="canonical" href="https://cinematchsocial.com/haberler" />
+    <meta property="og:locale" content="tr_TR" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CineMatch" />
+    <meta property="og:url" content="https://cinematchsocial.com/haberler" />
+    <meta property="og:title" content="CineMatch — Sinema Gündemi" />
+    <meta property="og:description" content="Film haberleri, vizyon notları ve sinema gündemi." />
+    <meta property="og:image" content="https://cinematchsocial.com/images/app_logo.png?v=20260801-2" />
+    <meta property="og:image:secure_url" content="https://cinematchsocial.com/images/app_logo.png?v=20260801-2" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="CineMatch logosu" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="CineMatch — Sinema Gündemi" />
+    <meta name="twitter:description" content="Film haberleri, vizyon notları ve sinema gündemi." />
+    <meta name="twitter:image" content="https://cinematchsocial.com/images/app_logo.png?v=20260801-2" />
+    <meta name="theme-color" content="#080807" />
+    <link rel="apple-touch-icon" href="/images/app_logo.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="images/favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="images/favicon/favicon-16x16.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/news.css?v=20260801-3" />
+    <link rel="stylesheet" href="css/cinebot-widget.css" />
+  </head>
+  <body data-news-page="list">
+    <a class="skip-link" href="#newsMain">Haberlere geç</a>
+
+    <header class="news-site-header">
+      <nav class="news-nav page-frame" aria-label="Ana menü">
+        <a class="news-brand" href="/">
+          <img src="images/app_logo.png" alt="" width="38" height="38" />
+          <span>CineMatch</span>
+        </a>
+        <div class="news-nav-links">
+          <a href="/">Ana Sayfa</a>
+          <a href="/blog">Blog</a>
+          <a class="active" href="/haberler" aria-current="page">Haberler</a>
+        </div>
+      </nav>
+
+      <section class="news-masthead page-frame" aria-labelledby="newsPageTitle">
+        <div class="edition-line">
+          <span>CineMatch Haber Merkezi</span>
+          <time id="newsEditionDate">Günün sayısı</time>
+          <span>Perde sonrası / 2026</span>
+        </div>
+        <div class="masthead-layout">
+          <p class="masthead-note">Sinema dünyasından<br />günün notları</p>
+          <h1 id="newsPageTitle">CineMatch <em>Gündem</em></h1>
+          <p class="masthead-deck">
+            Gösterim tarihleri, fragmanlar, festivaller ve sinema dünyasının
+            kenar sütunları.
+          </p>
+        </div>
+        <div class="news-sections" aria-label="Haber konuları">
+          <span>Vizyon</span>
+          <span>Festivaller</span>
+          <span>Ödüller</span>
+          <span>Fragmanlar</span>
+          <span>Sinema Dünyası</span>
+        </div>
+      </section>
+    </header>
+
+    <main id="newsMain" class="news-main">
+      <div class="page-frame news-shell">
+        <section class="news-toolbar" aria-label="Haber arşivi">
+          <div>
+            <p class="section-kicker">Haber masası</p>
+            <h2>Bugünün gündemi</h2>
+            <p id="newsCount">Yükleniyor…</p>
+          </div>
+          <label class="news-search">
+            <span>Arşivde ara</span>
+            <input id="newsSearch" type="search" placeholder="Başlık, film veya kategori" />
+          </label>
+        </section>
+
+        <section id="newsList" class="news-grid" aria-live="polite">
+          <p class="state-text">Haberler hazırlanıyor…</p>
+        </section>
+      </div>
+    </main>
+
+    <footer class="news-footer">
+      <div class="page-frame news-footer-layout">
+        <a class="news-brand" href="/">
+          <img src="images/app_logo.png" alt="" width="34" height="34" />
+          <span>CineMatch</span>
+        </a>
+        <p>Bazı haberler filmden önce okunur. Bazıları jenerikten sonra.</p>
+        <nav aria-label="Alt menü">
+          <a href="/">Ana Sayfa</a>
+          <a href="/blog">Blog</a>
+          <a href="gizlilik-sozlesmesi.pdf">Gizlilik</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="js/news.js?v=20260801-2"></script>
+    <script src="js/cinebot-widget.js" defer></script>
+  </body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CineMatch Duyuru Paneli</title>
+    <link rel="apple-touch-icon" href="/images/app_logo.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="images/favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="images/favicon/favicon-16x16.png" />
+    <link rel="stylesheet" href="css/admin-news.css?v=20260801-1" />
+  </head>
+  <body>
+    <main class="admin-shell">
+      <section id="authLoadingPanel" class="auth-panel auth-loading" aria-live="polite">
+        <div class="brand-lockup">
+          <img src="images/app_logo.png" alt="CineMatch" />
+          <div><p>Yönetim Paneli</p><h1>Oturum kontrol ediliyor…</h1></div>
+        </div>
+        <div class="auth-spinner" aria-hidden="true"></div>
+      </section>
+
+      <section id="loginPanel" class="auth-panel hidden">
+        <div class="brand-lockup">
+          <img src="images/app_logo.png" alt="CineMatch" />
+          <div>
+            <p>Yönetim Paneli</p>
+            <h1>CineMatch Duyuruları</h1>
+          </div>
+        </div>
+
+        <form id="loginForm" class="panel-card auth-form">
+          <label>
+            E-posta
+            <input id="loginEmail" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            Şifre
+            <input id="loginPassword" type="password" autocomplete="current-password" required />
+          </label>
+          <button id="loginButton" type="submit">Giriş Yap</button>
+          <p id="loginMessage" class="message"></p>
+        </form>
+      </section>
+
+      <section id="adminPanel" class="workspace hidden">
+        <aside class="sidebar">
+          <div class="brand-lockup compact">
+            <img src="images/app_logo.png" alt="CineMatch" />
+            <div>
+              <p>Duyuru Paneli</p>
+              <h1>CineMatch</h1>
+            </div>
+          </div>
+          <nav class="panel-nav">
+            <a href="/admin-news">Haber Paneli</a>
+            <a href="/admin-blog">Blog</a>
+            <a href="/admin-trivia">Soru Yarışması</a>
+            <a class="active" href="/admin-announcements">Duyurular</a>
+            <a href="/admin-bot">Bot Paneli</a>
+            <a href="/admin-social">Sosyal Medya</a>
+          </nav>
+
+          <div class="article-toolbar announcement-summary">
+            <div>
+              <p>Aktif Duyuru</p>
+              <strong id="announcementStatus">Yükleniyor</strong>
+            </div>
+          </div>
+          <div class="article-list" id="announcementList"></div>
+        </aside>
+
+        <section class="editor">
+          <header class="editor-header">
+            <div>
+              <p id="currentUserLabel">Editör</p>
+              <h2>Duyuru Yönetimi</h2>
+            </div>
+            <button id="logoutButton" type="button">Çıkış</button>
+          </header>
+
+          <section class="panel-card announcement-form">
+            <div class="section-heading">
+              <div>
+                <p>Uygulama Duyurusu</p>
+                <h3>Yeni Duyuru Paylaş</h3>
+              </div>
+              <label class="toggle-row">
+                <input id="announcementActive" type="checkbox" checked />
+                Aktif
+              </label>
+            </div>
+
+            <input id="announcementId" type="hidden" />
+
+            <label>
+              Duyuru Başlığı
+              <input id="announcementTitle" type="text" maxlength="160" placeholder="Örn. Yeni özellik yayında" />
+            </label>
+
+            <label>
+              Duyuru Mesajı
+              <textarea id="announcementMessage" rows="7" maxlength="3000" placeholder="Kullanıcılara gösterilecek duyuru metni"></textarea>
+            </label>
+
+            <label>
+              Görsel URL
+              <input id="announcementImageUrl" type="url" placeholder="https://... (opsiyonel)" />
+            </label>
+
+            <footer class="editor-actions">
+              <button id="deactivateAnnouncementButton" class="danger" type="button">Duyuruyu Pasifleştir</button>
+              <div>
+                <span id="announcementMessageLabel" class="message"></span>
+                <button id="saveAnnouncementButton" type="button">Duyuruyu Yayınla</button>
+              </div>
+            </footer>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
+    <script src="js/admin-shared.js"></script>
+    <script src="js/admin-announcements.js?v=20260722-1"></script>
+  </body>
+</html>

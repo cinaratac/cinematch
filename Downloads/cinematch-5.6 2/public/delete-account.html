@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineMatch - Hesabımı Sil</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/grid.css">
+    <style>
+        .container { padding: 80px 20px; text-align: center; max-width: 500px; margin: auto; }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
+        .form-input { width: 100%; border: 1px solid #ddd; border-radius: 12px; padding: 14px; font-size: 16px; transition: 0.3s; }
+        .form-input:focus { border-color: #1aad2e; outline: none; box-shadow: 0 0 8px rgba(26, 173, 46, 0.2); }
+        .delete-btn { background-color: #e50914; color: white; border: none; padding: 16px; border-radius: 50px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 20px; font-size: 16px; }
+        .delete-btn:disabled { background-color: #ccc; cursor: not-allowed; }
+        .message { margin-top: 20px; padding: 15px; border-radius: 12px; display: none; line-height: 1.6; font-size: 14px; }
+        .success { background-color: #e8f5e9; color: #2e7d32; display: block; }
+        .error { background-color: #ffebee; color: #c62828; display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="images/app_logo.png" width="70" style="border-radius: 15px; margin-bottom: 20px;">
+        <h1 style="font-size: 2rem; color: #363636;">Hesabını Sil</h1>
+        <p style="margin: 15px 0; color: #666;">Güvenliğiniz için lütfen bilgilerinizi doğrulayın. Bu işlem geri alınamaz.</p>
+        
+        <form id="deleteForm">
+            <div class="form-group">
+                <label>E-posta Adresi</label>
+                <input type="email" id="email" class="form-input" placeholder="ornek@mail.com" required>
+            </div>
+            <div class="form-group">
+                <label>Şifre</label>
+                <input type="password" id="password" class="form-input" placeholder="••••••••" required>
+            </div>
+            <div class="form-group">
+                <label>Ayrılma Nedeni</label>
+                <textarea id="reason" class="form-input" rows="2" placeholder="Neden silmek istiyorsunuz?"></textarea>
+            </div>
+            <button type="submit" id="submitBtn" class="delete-btn">Kimliğimi Doğrula ve Hesabımı Sil</button>
+        </form>
+
+        <div id="statusBox" class="message"></div>
+        
+        <a href="/" style="display: inline-block; margin-top: 25px; color: #1aad2e; text-decoration: none; font-weight: bold;">← Vazgeç ve Ana Sayfaya Dön</a>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // lib/firebase_options.dart dosyasından alınan yapılandırma
+        const firebaseConfig = {
+            apiKey: "AIzaSyAsHFffuxGA1cYKbHBs8LE6QbJOi4pjwC4",
+            authDomain: "movie-matching-8a836.firebaseapp.com",
+            projectId: "movie-matching-8a836",
+            storageBucket: "movie-matching-8a836.firebasestorage.app",
+            messagingSenderId: "266660427246",
+            appId: "1:266660427246:web:4dcb77ff5e91e47dc04aff"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        const deleteForm = document.getElementById('deleteForm');
+        const statusBox = document.getElementById('statusBox');
+        const submitBtn = document.getElementById('submitBtn');
+
+        deleteForm.onsubmit = async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const reason = document.getElementById('reason').value;
+
+            submitBtn.disabled = true;
+            statusBox.className = 'message';
+            statusBox.style.display = 'none';
+
+            try {
+                // 1. ADIM: Kullanıcının şifresini doğrula (Giriş yapmayı dene)
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+
+                // 2. ADIM: Doğrulama başarılıysa Firestore'a silme talebi ekle
+                await db.collection('account_delete_requests').doc(user.uid).set({
+                    uid: user.uid,
+                    email: email,
+                    reason: reason,
+                    requestDate: firebase.firestore.FieldValue.serverTimestamp(),
+                    status: 'verified_request',
+                    verified: true
+                });
+
+                statusBox.innerText = 'Kimliğiniz doğrulandı ve silme talebiniz alındı. Hesabınız ve tüm verileriniz 7 gün içinde kalıcı olarak silinecektir.';
+                statusBox.className = 'message success';
+                deleteForm.style.display = 'none'; // Formu gizle
+
+                // Opsiyonel: Firebase Auth üzerinden kullanıcıyı hemen silmek isterseniz:
+                await user.delete(); 
+                statusBox.innerText = 'Hesabınız başarıyla silindi ve oturumunuz kapatıldı.';
+
+            } catch (error) {
+                let errorMsg = 'Hata: ';
+                if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+                    errorMsg += 'E-posta veya şifre hatalı. Lütfen kontrol edin.';
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMsg += 'Çok fazla hatalı deneme yaptınız. Lütfen sonra tekrar deneyin.';
+                } else {
+                    errorMsg += error.message;
+                }
+                statusBox.innerText = errorMsg;
+                statusBox.className = 'message error';
+                submitBtn.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>

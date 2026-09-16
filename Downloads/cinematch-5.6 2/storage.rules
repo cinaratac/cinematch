@@ -1,0 +1,66 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isBlogEditor() {
+      return signedIn() && (
+        request.auth.uid in [
+          "RfpPtaZfaKYueG9b2dd2ASScqOO2",
+          "ZkXr7PmQ4WV0iRIVR7uUUwfNS8N2",
+          "mNCWixSnJSa6tE1hZs4iZwn3Du43"
+        ] ||
+        (
+          firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+          firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == "admin"
+        ) ||
+        (
+          firestore.exists(/databases/(default)/documents/blog_editors/$(request.auth.uid)) &&
+          firestore.get(/databases/(default)/documents/blog_editors/$(request.auth.uid)).data.active != false
+        ) ||
+        (
+          !firestore.exists(/databases/(default)/documents/blog_editors/$(request.auth.uid)) &&
+          firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+          firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ["blogger", "blogEditor"]
+        )
+      );
+    }
+
+    // Yayındaki blog sayfaları giriş gerektirmeden görselleri okuyabilir.
+    // Blogger yalnızca kendi UID klasörüne, en fazla 10 MB görsel yükleyebilir.
+    match /blog_images/{uid}/{postId}/{fileName} {
+      allow read: if true;
+      allow create, update: if isBlogEditor() &&
+        request.auth.uid == uid &&
+        request.resource.size < 10 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/(jpeg|png|webp|gif)');
+      allow delete: if isBlogEditor() && request.auth.uid == uid;
+    }
+
+    // Onboarding profil fotoğrafı sabit ve kullanıcıya ait bir yola yüklenir.
+    // Sunucu hesabı active yapmadan önce aynı dosyanın metadata'sını doğrular.
+    match /profile_images/{uid}/avatar.jpg {
+      allow read: if true;
+      allow create, update: if signedIn() &&
+        request.auth.uid == uid &&
+        request.resource.size > 0 &&
+        request.resource.size < 5 * 1024 * 1024 &&
+        request.resource.contentType == 'image/jpeg' &&
+        request.resource.metadata.ownerUid == uid &&
+        request.resource.metadata.purpose == 'onboarding_profile';
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Mevcut uygulama davranışı blog dışındaki bütün Storage yolları için
+    // korunur. blog_images burada özellikle dışarıda bırakılır; aksi hâlde
+    // geniş izin yukarıdaki daha sıkı blog koşullarını geçersiz kılardı.
+    match /{topLevel}/{remainingPath=**} {
+      allow read, write: if signedIn() &&
+        topLevel != "blog_images" &&
+        topLevel != "profile_images";
+    }
+  }
+}

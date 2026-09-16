@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.kozmosoft.cinematch",
+      "sha256_cert_fingerprints": [
+        "E0:D9:C3:F0:91:5D:A3:03:D6:9F:68:A7:AD:9B:C6:CE:1E:FA:9F:12:22:56:0E:4D:B3:80:D4:68:EE:BA:D1:EF"
+      ]
+    }
+  }
+]

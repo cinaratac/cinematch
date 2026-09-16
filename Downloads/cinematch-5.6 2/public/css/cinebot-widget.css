@@ -1,0 +1,283 @@
+/* CineBot AI - web sohbet widget'ı stilleri
+   Site marka renkleriyle (yeşil #0fb333 / #26b919) ve Lato fontuyla uyumlu. */
+
+:root {
+  --cinebot-green: #0fb333;
+  --cinebot-green-dark: #0a8f27;
+  --cinebot-bg: #ffffff;
+  --cinebot-bubble-bot: #f1f4f2;
+  --cinebot-bubble-user: #0fb333;
+  --cinebot-text: #1c1f1d;
+}
+
+#cinebot-launcher {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cinebot-green), var(--cinebot-green-dark));
+  box-shadow: 0 6px 18px rgba(15, 179, 51, 0.45);
+  border: none;
+  cursor: pointer;
+  z-index: 999998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.18s ease;
+}
+#cinebot-launcher:hover { transform: scale(1.06); }
+#cinebot-launcher svg { width: 28px; height: 28px; fill: #fff; }
+#cinebot-launcher .cinebot-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 12px;
+  height: 12px;
+  background: #ff4d4f;
+  border: 2px solid #fff;
+  border-radius: 50%;
+}
+
+#cinebot-panel {
+  position: fixed;
+  right: 22px;
+  bottom: 96px;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+  height: 520px;
+  max-height: calc(100vh - 140px);
+  background: var(--cinebot-bg);
+  border-radius: 18px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 999999;
+  font-family: "Lato", sans-serif;
+  opacity: 0;
+  transform: translateY(16px) scale(0.98);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+#cinebot-panel.cinebot-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+#cinebot-header {
+  background: linear-gradient(135deg, var(--cinebot-green), var(--cinebot-green-dark));
+  color: #fff;
+  padding: 14px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+#cinebot-header .cinebot-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+#cinebot-header .cinebot-avatar svg { width: 18px; height: 18px; fill: #fff; }
+#cinebot-header .cinebot-title { font-weight: 900; font-size: 15px; line-height: 1.2; }
+#cinebot-header .cinebot-subtitle { font-size: 11px; opacity: 0.85; }
+#cinebot-header-actions { margin-left: auto; display: flex; gap: 6px; }
+#cinebot-header-actions button {
+  background: rgba(255, 255, 255, 0.16);
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#cinebot-header-actions button svg { width: 15px; height: 15px; fill: #fff; }
+#cinebot-header-actions button.cinebot-active { background: rgba(255, 255, 255, 0.42); }
+
+#cinebot-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fafbfa;
+}
+
+.cinebot-row { display: flex; gap: 8px; align-items: flex-end; }
+.cinebot-row.cinebot-mine { justify-content: flex-end; }
+.cinebot-bubble {
+  max-width: 78%;
+  padding: 9px 12px;
+  border-radius: 14px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--cinebot-text);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.cinebot-row:not(.cinebot-mine) .cinebot-bubble {
+  background: var(--cinebot-bubble-bot);
+  border-bottom-left-radius: 4px;
+}
+.cinebot-row.cinebot-mine .cinebot-bubble {
+  background: var(--cinebot-bubble-user);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.cinebot-mini-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #e4f7e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cinebot-mini-avatar svg { width: 12px; height: 12px; fill: var(--cinebot-green-dark); }
+
+.cinebot-movies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  max-width: 78%;
+}
+.cinebot-movie-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #eafbee;
+  border: 1px solid #bdeecb;
+  color: var(--cinebot-green-dark);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.cinebot-movie-chip:hover { background: #d9f6df; }
+
+.cinebot-typing { display: flex; gap: 4px; padding: 4px 2px; }
+.cinebot-typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #9aa39c;
+  animation: cinebot-bounce 1.1s infinite ease-in-out;
+}
+.cinebot-typing span:nth-child(2) { animation-delay: 0.15s; }
+.cinebot-typing span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes cinebot-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+#cinebot-inputbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px;
+  border-top: 1px solid #ececec;
+  background: #fff;
+  flex-shrink: 0;
+}
+#cinebot-inputbar input {
+  flex: 1;
+  border: 1px solid #e2e5e2;
+  background: #f6f7f6;
+  border-radius: 20px;
+  padding: 9px 14px;
+  font-size: 13.5px;
+  font-family: "Lato", sans-serif;
+  outline: none;
+  color: var(--cinebot-text);
+}
+#cinebot-inputbar input:focus { border-color: var(--cinebot-green); }
+#cinebot-inputbar button {
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+#cinebot-mic-btn { background: #f1f4f2; }
+#cinebot-mic-btn svg { width: 16px; height: 16px; fill: #4a534c; }
+#cinebot-mic-btn.cinebot-recording { background: #ff4d4f; }
+#cinebot-mic-btn.cinebot-recording svg { fill: #fff; }
+#cinebot-send-btn { background: var(--cinebot-green); }
+#cinebot-send-btn svg { width: 16px; height: 16px; fill: #fff; }
+#cinebot-send-btn:disabled { background: #cfe9d5; cursor: default; }
+
+@media (max-width: 420px) {
+  #cinebot-panel {
+    right: 12px;
+    left: 12px;
+    width: auto;
+    bottom: 88px;
+  }
+  #cinebot-launcher { right: 16px; bottom: 16px; }
+}
+.cinebot-rating-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+.cinebot-rating-card {
+  background: #1e1e1e;
+  color: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  min-width: 220px;
+}
+.cinebot-stars {
+  display: flex !important;
+  flex-direction: row-reverse !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 4px;
+  margin: 12px 0;
+}
+.cinebot-star {
+  display: inline-flex !important;
+  width: auto !important;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 28px;
+  cursor: pointer;
+  color: #555;
+  transition: color .15s;
+}
+.cinebot-star:hover, .cinebot-star:hover ~ .cinebot-star { color: #0a8f27; }
+.cinebot-rating-skip {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+}

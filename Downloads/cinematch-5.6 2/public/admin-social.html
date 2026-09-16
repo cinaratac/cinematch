@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CineMatch Sosyal Medya Paneli</title>
+    <link rel="icon" href="images/favicon/favicon-32x32.png" />
+    <link rel="stylesheet" href="css/admin-news.css?v=20260801-1" />
+    <link rel="stylesheet" href="css/admin-social.css?v=20260801-1" />
+  </head>
+  <body>
+    <main class="admin-shell">
+      <section id="adminPanel" class="workspace social-workspace">
+        <aside class="sidebar social-sidebar">
+          <div class="brand-lockup compact">
+            <img src="images/app_logo.png" alt="CineMatch" />
+            <div><p>Sosyal Medya</p><h1>CineMatch</h1></div>
+          </div>
+          <nav class="panel-nav social-nav">
+            <a href="/admin-news">Haberler</a>
+            <a href="/admin-blog">Blog</a>
+            <a href="/admin-trivia">Soru Yarışması</a>
+            <a href="/admin-announcements">Duyurular</a>
+            <a href="/admin-bot">Bot Paneli</a>
+            <a class="active" href="/admin-social">Sosyal Medya</a>
+          </nav>
+
+          <section class="studio-controls">
+            <div>
+              <span class="eyebrow">Instagram gönderisi</span>
+              <h2>Haftalık Top 10</h2>
+              <p>Son bir haftada kullanıcıların izledi olarak işaretlediği filmleri popülerliğe göre sıralar.</p>
+            </div>
+            <label>
+              Haftanın içinden bir tarih
+              <input id="weekDate" type="date" />
+            </label>
+            <button id="generateButton" class="primary-action" type="button">
+              <span>✨</span> Görseli Oluştur
+            </button>
+            <button id="generatePromoButton" class="promo-action" type="button">
+              <span>✦</span> Uygulama Tanıtımı Oluştur
+            </button>
+            <div class="list-promo-controls">
+              <span class="eyebrow">Cinematch listeleri</span>
+              <label>
+                Üst yazı
+                <input id="listLabel" type="text" maxlength="60" value="CINEMATCH LİSTELERİ" />
+              </label>
+              <label>
+                Liste başlığı
+                <textarea id="listHeadline" rows="3" maxlength="90">Mutlaka izlemen gereken 10 bilim kurgu filmi</textarea>
+              </label>
+              <label>
+                Hazır kapak
+                <select id="listCover">
+                  <option value="dune">Dune: Part Two</option>
+                  <option value="interstellar">Interstellar</option>
+                  <option value="oppenheimer">Oppenheimer</option>
+                  <option value="lalaland">La La Land</option>
+                </select>
+              </label>
+              <label>
+                Kendi görselini kullan
+                <input id="listCoverUpload" type="file" accept="image/png,image/jpeg,image/webp" />
+                <small>Dosya seçerseniz hazır kapağın yerine kullanılır; sunucuya yüklenmez.</small>
+              </label>
+              <button id="generateListButton" class="promo-action" type="button">
+                <span>▤</span> Liste Kapağı Oluştur
+              </button>
+            </div>
+            <div class="grid-promo-controls">
+              <span class="eyebrow">TMDB film ızgarası</span>
+              <label>
+                TMDB film linkleri
+                <textarea id="gridMovieLinks" rows="7" placeholder="Her satıra bir film linki:&#10;https://www.themoviedb.org/movie/693134-dune-part-two&#10;https://www.themoviedb.org/movie/157336-interstellar"></textarea>
+                <small>Her satıra bir TMDB film linki yapıştırın. En fazla 36 film.</small>
+              </label>
+              <button id="generateGridButton" class="promo-action" type="button">
+                <span>▦</span> Film Izgarası Oluştur
+              </button>
+            </div>
+            <div class="rating-rank-controls">
+              <span class="eyebrow">TMDB puan sıralaması</span>
+              <label>
+                Logo yanındaki başlık
+                <input id="ratingHeadline" type="text" maxlength="90" value="TMDB PUAN SIRALAMASI" />
+              </label>
+              <label>
+                Karşılaştırılacak filmler
+                <textarea id="ratingMovieLinks" rows="7" placeholder="Her satıra bir film linki:&#10;https://www.themoviedb.org/movie/693134-dune-part-two&#10;https://www.themoviedb.org/movie/157336-interstellar"></textarea>
+                <small>En fazla 10 TMDB film linki ekleyin. Filmler TMDB puanına göre otomatik sıralanır.</small>
+              </label>
+              <button id="generateRatingButton" class="promo-action" type="button">
+                <span>▰</span> Puan Sıralaması Oluştur
+              </button>
+            </div>
+            <div class="cineheard-controls">
+              <span class="eyebrow">Cineheard</span>
+              <label>
+                Söz
+                <textarea id="cineheardQuote" rows="5" maxlength="320" placeholder="Paylaşmak istediğiniz sözü yazın…">Why do we fall? So we can learn to pick ourselves up.</textarea>
+              </label>
+              <label>
+                Söyleyen / kaynak
+                <input id="cineheardSource" type="text" maxlength="100" value="Alfred Pennyworth · Batman Begins" placeholder="Karakter · Film" />
+              </label>
+              <button id="generateCineheardButton" class="promo-action" type="button">
+                <span>❞</span> Cineheard Oluştur
+              </button>
+            </div>
+            <button id="downloadButton" class="secondary-action" type="button" disabled>
+              PNG Olarak İndir
+            </button>
+            <p id="statusMessage" class="message" aria-live="polite"></p>
+            <div class="studio-note">
+              <strong>Çıktı</strong>
+              <span>2160 × 2160 px · PNG · yüksek çözünürlüklü kare</span>
+            </div>
+          </section>
+        </aside>
+
+        <section class="social-editor">
+          <header class="editor-header">
+            <div><p>Sosyal Medya Stüdyosu</p><h2>Gönderi Önizleme</h2></div>
+            <span class="preview-badge">CANLI ÖNİZLEME</span>
+          </header>
+          <div class="preview-stage">
+            <div id="emptyPreview" class="empty-preview">
+              <span>✦</span>
+              <h3>Haftalık seçkiyi hazırlayın</h3>
+              <p>Sol taraftan tarihi seçip “Görseli Oluştur” butonuna basın.</p>
+            </div>
+            <canvas id="socialCanvas" width="2160" height="2160" class="hidden"></canvas>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
+    <script src="js/admin-shared.js"></script>
+    <script src="js/admin-social.js?v=20260731-4"></script>
+  </body>
+</html>

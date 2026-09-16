@@ -1,0 +1,98 @@
+{
+  "project_info": {
+    "project_number": "266660427246",
+    "project_id": "movie-matching-8a836",
+    "storage_bucket": "movie-matching-8a836.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:266660427246:android:4dcb77ff5e91e47dc04aff",
+        "android_client_info": {
+          "package_name": "com.example.fluttergirdi"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "266660427246-k3lmulk15j7knljhvupo8s6kodeio42i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAsHFffuxGA1cYKbHBs8LE6QbJOi4pjwC4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "266660427246-k3lmulk15j7knljhvupo8s6kodeio42i.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "266660427246-0eflhvas4ep4gsav4pgf1vvuu5t2t1rg.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.fluttergirdi"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:266660427246:android:8fb16e780cb74f7ec04aff",
+        "android_client_info": {
+          "package_name": "com.kozmosoft.cinematch"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "266660427246-j6icg6srl34hcgqj1h9ge2sr7fj5bmu7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kozmosoft.cinematch",
+            "certificate_hash": "780d741933bf505b8ec0cb2b11d414b2334de17e"
+          }
+        },
+        {
+          "client_id": "266660427246-s7jp6nb5ot5vf44ba5rhh24bvng8jkd0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kozmosoft.cinematch",
+            "certificate_hash": "1da1bf1885b618d592b60ca4c106b2fa65b13c21"
+          }
+        },
+        {
+          "client_id": "266660427246-k3lmulk15j7knljhvupo8s6kodeio42i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAsHFffuxGA1cYKbHBs8LE6QbJOi4pjwC4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "266660427246-k3lmulk15j7knljhvupo8s6kodeio42i.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "266660427246-0eflhvas4ep4gsav4pgf1vvuu5t2t1rg.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.fluttergirdi"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

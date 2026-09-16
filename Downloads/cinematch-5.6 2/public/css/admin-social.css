@@ -1,0 +1,243 @@
+.social-workspace {
+  grid-template-columns: 340px minmax(0, 1fr);
+  background: #0c100e;
+}
+
+.social-sidebar {
+  display: flex;
+  flex-direction: column;
+}
+
+.social-nav {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.studio-controls {
+  display: grid;
+  gap: 16px;
+  margin-top: 30px;
+}
+
+.studio-controls h2 {
+  margin: 6px 0 8px;
+  font-size: 25px;
+}
+
+.studio-controls p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.studio-controls input,
+.studio-controls textarea,
+.studio-controls select {
+  color: #f5f7f5;
+  background-color: #151b18;
+  caret-color: #29ca2c;
+}
+
+.studio-controls input::placeholder,
+.studio-controls textarea::placeholder {
+  color: #8c9690;
+  opacity: 1;
+}
+
+.eyebrow {
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.studio-controls .primary-action {
+  margin: 2px 0 0;
+}
+
+.studio-controls .promo-action {
+  padding: 12px 14px;
+  border: 1px solid rgba(41, 202, 44, .38);
+  border-radius: 8px;
+  color: #dfffe0;
+  background: rgba(41, 202, 44, .10);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.studio-controls .promo-action:hover {
+  border-color: var(--primary);
+  background: rgba(41, 202, 44, .16);
+}
+
+.list-promo-controls,
+.grid-promo-controls,
+.rating-rank-controls,
+.cineheard-controls {
+  display: grid;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.list-promo-controls textarea,
+.grid-promo-controls textarea,
+.rating-rank-controls textarea,
+.cineheard-controls textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+
+.list-promo-controls select,
+.list-promo-controls textarea,
+.list-promo-controls input[type="text"],
+.list-promo-controls input[type="file"],
+.grid-promo-controls textarea,
+.rating-rank-controls input,
+.rating-rank-controls textarea,
+.cineheard-controls textarea,
+.cineheard-controls input {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: #f5f7f5;
+  background: #151b18;
+  font: inherit;
+}
+
+.list-promo-controls input[type="file"] {
+  padding: 9px;
+  font-size: 12px;
+}
+
+.list-promo-controls small,
+.grid-promo-controls small,
+.rating-rank-controls small,
+.cineheard-controls small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.studio-controls .secondary-action {
+  margin: -6px 0 0;
+}
+
+.studio-note {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
+.studio-note strong {
+  font-size: 12px;
+}
+
+.studio-note span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.logout-action {
+  margin-top: auto;
+  padding: 12px;
+  border-radius: 8px;
+  color: var(--muted);
+  background: var(--surface-soft);
+  font-weight: 700;
+}
+
+.social-editor {
+  min-width: 0;
+  padding: 28px;
+}
+
+.social-editor .editor-header {
+  color: white;
+}
+
+.preview-badge {
+  padding: 7px 10px;
+  border: 1px solid rgba(41, 202, 44, .35);
+  border-radius: 999px;
+  color: #55e775;
+  background: rgba(41, 202, 44, .08);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .8px;
+}
+
+.preview-stage {
+  display: grid;
+  min-height: calc(100vh - 115px);
+  place-items: center;
+  margin-top: 20px;
+  padding: 30px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 70% 0%, rgba(41, 202, 44, .12), transparent 35%),
+    #111713;
+}
+
+#socialCanvas {
+  width: min(100%, 648px);
+  height: auto;
+  border-radius: 5px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .55);
+}
+
+.empty-preview {
+  max-width: 360px;
+  color: white;
+  text-align: center;
+}
+
+.empty-preview span {
+  display: inline-grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border: 1px solid rgba(41, 202, 44, .35);
+  border-radius: 18px;
+  color: #55e775;
+  background: rgba(41, 202, 44, .08);
+  font-size: 24px;
+}
+
+.empty-preview h3 {
+  margin: 18px 0 8px;
+}
+
+.empty-preview p {
+  margin: 0;
+  color: rgba(255, 255, 255, .55);
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .social-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .social-sidebar {
+    position: static;
+    height: auto;
+  }
+
+  .social-editor {
+    padding: 18px;
+  }
+
+  .preview-stage {
+    min-height: 500px;
+    padding: 16px;
+  }
+}

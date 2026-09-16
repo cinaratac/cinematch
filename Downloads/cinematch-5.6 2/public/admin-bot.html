@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CineMatch Bot Paneli</title>
+    <link rel="apple-touch-icon" href="/images/app_logo.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="images/favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="images/favicon/favicon-16x16.png" />
+    <link rel="stylesheet" href="css/admin-bot.css?v=20260801-1" />
+  </head>
+  <body>
+    <main class="admin-shell">
+      <section id="authLoadingPanel" class="auth-panel auth-loading" aria-live="polite">
+        <div class="brand-lockup">
+          <img src="images/app_logo.png" alt="CineMatch" />
+          <div>
+            <p>Yönetim Paneli</p>
+            <h1>Oturum kontrol ediliyor…</h1>
+          </div>
+        </div>
+        <div class="auth-spinner" aria-hidden="true"></div>
+      </section>
+
+      <section id="loginPanel" class="auth-panel hidden">
+        <div class="brand-lockup">
+          <img src="images/app_logo.png" alt="CineMatch" />
+          <div>
+            <p>Yönetim Paneli</p>
+            <h1>CineBot AI Paneli</h1>
+          </div>
+        </div>
+
+        <form id="loginForm" class="panel-card auth-form">
+          <label>
+            E-posta
+            <input id="loginEmail" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            Şifre
+            <input id="loginPassword" type="password" autocomplete="current-password" required />
+          </label>
+          <button id="loginButton" type="submit">Giriş Yap</button>
+          <p id="loginMessage" class="message"></p>
+        </form>
+      </section>
+
+      <section id="adminPanel" class="workspace hidden">
+        <aside class="sidebar">
+          <div class="brand-lockup compact">
+            <img src="images/app_logo.png" alt="CineMatch" />
+            <div>
+              <p>Bot Paneli</p>
+              <h1>CineMatch</h1>
+            </div>
+          </div>
+          <nav class="panel-nav">
+            <a href="/admin-news">Haber Paneli</a>
+            <a href="/admin-blog">Blog</a>
+            <a href="/admin-trivia">Soru Yarışması</a>
+            <a href="/admin-announcements">Duyurular</a>
+            <a class="active" href="/admin-bot">Bot Paneli</a>
+            <a href="/admin-social">Sosyal Medya</a>
+          </nav>
+
+          <div class="kpi-mini-grid" id="kpiMiniGrid">
+            <div class="kpi-mini"><strong id="kpiSessions">–</strong><span>Oturum</span></div>
+            <div class="kpi-mini"><strong id="kpiMessages">–</strong><span>Mesaj</span></div>
+            <div class="kpi-mini"><strong id="kpiTools">–</strong><span>Tool Çağrısı</span></div>
+            <div class="kpi-mini"><strong id="kpiRating">–</strong><span>Ort. Puan</span></div>
+          </div>
+
+          <div class="article-toolbar">
+            <div>
+              <p>Konuşmalar</p>
+              <strong id="sessionCount">0 oturum</strong>
+            </div>
+            <input id="sessionSearch" type="search" placeholder="Kullanıcı adı / ID ara" />
+          </div>
+          <div class="article-list" id="sessionList"></div>
+          <div class="pager" id="sessionPager"></div>
+        </aside>
+
+        <section class="editor">
+          <header class="editor-header">
+            <div>
+              <p id="currentUserLabel">Yönetici</p>
+              <h2 id="mainTitle">Genel Bakış</h2>
+            </div>
+            <div class="header-actions">
+              <button id="refreshButton" type="button" class="secondary-action">Yenile</button>
+              <button id="logoutButton" type="button">Çıkış</button>
+            </div>
+          </header>
+
+          <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="overview">Genel Bakış</button>
+            <button class="tab-btn" data-tab="conversation">Konuşma Detayı</button>
+            <button class="tab-btn" data-tab="tools">Tool Çağrıları</button>
+            <button class="tab-btn" data-tab="performance">Performans</button>
+            <button class="tab-btn" data-tab="monitoring">Monitoring</button>
+          </nav>
+
+          <p id="globalMessage" class="message"></p>
+
+          <!-- GENEL BAKIŞ -->
+          <section id="tab-overview" class="tab-panel">
+            <div class="panel-card report-toolbar">
+              <div>
+                <h3>Yönetim Raporları</h3>
+                <p class="muted-note">Yönetici özeti seçilen dönemin KPI'larını tek satırda; konuşma sonuçları ise mesaj, bot cevabı ve sınıflandırmayı satır satır indirir.</p>
+              </div>
+              <div class="report-actions">
+                <label>
+                  Dönem
+                  <select id="overviewReportDays">
+                    <option value="7">Son 7 gün</option>
+                    <option value="14">Son 14 gün</option>
+                    <option value="30" selected>Son 30 gün</option>
+                    <option value="90">Son 90 gün</option>
+                  </select>
+                </label>
+                <button id="overviewCsvButton" type="button" class="secondary-action">Yönetici Özeti CSV</button>
+                <button id="outcomesCsvButton" type="button">Konuşma Sonuçları CSV</button>
+              </div>
+            </div>
+            <div class="kpi-grid">
+              <div class="kpi-card"><span>Toplam Oturum</span><strong id="ovSessions">–</strong></div>
+              <div class="kpi-card"><span>Aktif Oturum</span><strong id="ovActive">–</strong></div>
+              <div class="kpi-card"><span>Toplam Mesaj</span><strong id="ovMessages">–</strong></div>
+              <div class="kpi-card"><span>Benzersiz Kullanıcı</span><strong id="ovUsers">–</strong></div>
+              <div class="kpi-card"><span>Tool Çağrısı</span><strong id="ovTools">–</strong></div>
+              <div class="kpi-card"><span>Tool Başarı Oranı</span><strong id="ovToolSuccess">–</strong></div>
+              <div class="kpi-card"><span>Ortalama Puan</span><strong id="ovAvgRating">–</strong></div>
+              <div class="kpi-card"><span>Değerlendirme Sayısı</span><strong id="ovEvalCount">–</strong></div>
+            </div>
+
+            <div class="panel-card classification-summary-card">
+              <div class="classification-section-heading">
+                <div>
+                  <h3>Intent / Outcome Özeti</h3>
+                  <p class="muted-note">Son 14 gündeki otomatik sınıflandırılmış konuşma turları.</p>
+                </div>
+                <span class="classification-version-note">Sürümlenmiş otomatik etiketler</span>
+              </div>
+              <div class="kpi-grid classification-kpi-grid">
+                <div class="kpi-card"><span>Sınıflandırılan Tur</span><strong id="ovClassified">–</strong></div>
+                <div class="kpi-card outcome-kpi success"><span>Başarı Oranı</span><strong id="ovSuccessRate">–</strong></div>
+                <div class="kpi-card outcome-kpi fallback"><span>Fallback Oranı</span><strong id="ovFallbackRate">–</strong></div>
+                <div class="kpi-card outcome-kpi error"><span>Teknik Hata Oranı</span><strong id="ovTechnicalRate">–</strong></div>
+              </div>
+            </div>
+
+            <div class="chart-grid classification-chart-grid">
+              <div class="panel-card chart-card">
+                <h3>Kullanıcı Niyetleri</h3>
+                <p class="muted-note">Kullanıcıların botu hangi amaçla kullandığının dağılımı.</p>
+                <canvas id="intentChart" height="260"></canvas>
+              </div>
+              <div class="panel-card chart-card">
+                <h3>İşlem Sonuçları</h3>
+                <p class="muted-note">İsteklerin başarı, fallback ve hata dağılımı.</p>
+                <canvas id="outcomeChart" height="260"></canvas>
+              </div>
+            </div>
+
+            <div class="chart-grid">
+              <div class="panel-card chart-card">
+                <h3>Son 14 Gün Mesaj Hacmi</h3>
+                <canvas id="dailyChart" height="220"></canvas>
+              </div>
+              <div class="panel-card chart-card">
+                <h3>Tool Çağrı Sonuçları</h3>
+                <canvas id="toolChart" height="220"></canvas>
+              </div>
+              <div class="panel-card chart-card">
+                <h3>Değerlendirme Puan Dağılımı</h3>
+                <canvas id="ratingChart" height="220"></canvas>
+              </div>
+              <div class="panel-card chart-card">
+                <h3>En Çok Sorulan Filmler</h3>
+                <table class="data-table" id="topMoviesTable">
+                  <thead><tr><th>Film</th><th>Sorgu Sayısı</th><th>Ort. Tool Süresi</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- KONUŞMA DETAYI -->
+          <section id="tab-conversation" class="tab-panel hidden">
+            <div id="conversationEmpty" class="panel-card empty-state">
+              Soldaki listeden bir konuşma seçin.
+            </div>
+            <div id="conversationContent" class="hidden">
+              <div class="panel-card session-meta" id="sessionMeta"></div>
+
+              <div class="panel-card">
+                <h3>Oturum Özeti</h3>
+                <p id="sessionSummary" class="summary-text">–</p>
+              </div>
+
+              <div class="panel-card">
+                <div class="classification-section-heading">
+                  <div>
+                    <h3>Oturum Intent / Outcome Analizi</h3>
+                    <p class="muted-note">Bu oturumdaki tüm sınıflandırılmış turların dağılımı.</p>
+                  </div>
+                </div>
+                <div class="session-classification-grid">
+                  <div>
+                    <h4>Niyetler</h4>
+                    <div id="sessionIntentBreakdown" class="classification-breakdown"></div>
+                  </div>
+                  <div>
+                    <h4>Sonuçlar</h4>
+                    <div id="sessionOutcomeBreakdown" class="classification-breakdown"></div>
+                  </div>
+                </div>
+                <p id="sessionClassificationNote" class="muted-note"></p>
+              </div>
+
+              <div class="panel-card">
+                <h3>Bu Oturumun Pipeline Performansı</h3>
+                <div class="kpi-grid" id="sessionPerfSummaryGrid"></div>
+                <div class="table-scroll">
+                  <table class="data-table" id="sessionPerfMetricsTable">
+                    <thead>
+                      <tr>
+                        <th>Zaman</th><th>Kanal</th><th>İndirme</th><th>ASR</th><th>AI</th>
+                        <th>AI Hazır</th><th>Metin Gönder</th><th>TTFB</th>
+                        <th>TTS</th><th>TTS Hazır</th><th>Ses Yükle</th><th>Ses Oynatma</th><th>Tool Toplam</th>
+                        <th>TTFS</th><th>E2E</th><th>Tam Tur</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="panel-card">
+                <h3>Ses Kayıtları</h3>
+                <div id="voiceRecordingsList" class="voice-recordings-list">
+                  <p class="message">Bu oturumda ses kaydı yok.</p>
+                </div>
+              </div>
+
+              <div class="panel-card">
+                <h3>AI Görüşme Kalite Analizi</h3>
+                <div id="voiceAiEvaluations">
+                  <p class="message">Bu oturum için AI değerlendirmesi yok.</p>
+                </div>
+              </div>
+
+              <div class="panel-card">
+                <h3>Tam Konuşma Dökümü</h3>
+                <div id="transcriptList" class="transcript-list"></div>
+              </div>
+
+              <div class="panel-card">
+                <h3>Bu Oturumda Çağrılan Tool'lar</h3>
+                <table class="data-table" id="sessionToolsTable">
+                  <thead><tr><th>Zaman</th><th>Tool</th><th>Sorgu</th><th>Süre</th><th>Sonuç</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+                <p class="muted-note" id="sessionToolsEmpty">Bu oturumda tool çağrısı yok.</p>
+              </div>
+
+              <div class="panel-card">
+                <h3>Değerlendirme (Test / Skor)</h3>
+                <p class="muted-note">
+                  Veritabanında otomatik üretilmiş bir test skoru yoktur; bu bölüm, konuşmayı
+                  manuel olarak 1-5 arası puanlayıp not düşmenizi sağlar.
+                </p>
+                <form id="evaluateForm" class="evaluate-form">
+                  <label>
+                    Puan
+                    <select id="evalRating">
+                      <option value="5">5 - Mükemmel</option>
+                      <option value="4">4 - İyi</option>
+                      <option value="3" selected>3 - Orta</option>
+                      <option value="2">2 - Zayıf</option>
+                      <option value="1">1 - Kötü</option>
+                    </select>
+                  </label>
+                  <label>
+                    Not
+                    <textarea id="evalNote" rows="2" placeholder="Opsiyonel not"></textarea>
+                  </label>
+                  <button type="submit">Kaydet</button>
+                  <span id="evalMessage" class="message"></span>
+                </form>
+                <table class="data-table" id="evaluationsTable">
+                  <thead><tr><th>Tarih</th><th>Puan</th><th>Not</th><th>Değerlendiren</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- TOOL ÇAĞRILARI -->
+          <section id="tab-tools" class="tab-panel hidden">
+            <div class="panel-card">
+              <h3>Tüm Tool Çağrıları</h3>
+              <table class="data-table" id="toolCallsTable">
+                <thead>
+                  <tr><th>Zaman</th><th>Kullanıcı</th><th>Tool</th><th>Sorgu</th><th>Süre</th><th>Sonuç</th><th>Oturum</th></tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+              <div class="pager" id="toolCallsPager"></div>
+            </div>
+          </section>
+
+          <!-- PERFORMANS -->
+          <section id="tab-performance" class="tab-panel hidden">
+            <div class="panel-card report-toolbar">
+              <div>
+                <h3>Performans Raporu</h3>
+                <p class="muted-note">En fazla 5.000 ölçümü Excel uyumlu CSV olarak indirin.</p>
+              </div>
+              <div class="report-actions">
+                <label>
+                  Dönem
+                  <select id="performanceReportDays">
+                    <option value="7">Son 7 gün</option>
+                    <option value="30" selected>Son 30 gün</option>
+                    <option value="90">Son 90 gün</option>
+                    <option value="365">Son 1 yıl</option>
+                  </select>
+                </label>
+                <button id="performanceCsvButton" type="button">Performans CSV</button>
+              </div>
+            </div>
+            <div class="panel-card">
+              <h3>Ortalama Pipeline Süreleri (bu sayfa)</h3>
+              <div class="kpi-grid" id="perfSummaryGrid"></div>
+            </div>
+
+            <div class="chart-grid performance-chart-grid">
+              <div class="panel-card chart-card">
+                <h3>Ortalama Aşama Süreleri</h3>
+                <p class="muted-note">Her işlemin kendi çalışma süresi.</p>
+                <canvas id="perfStageChart" height="260"></canvas>
+              </div>
+              <div class="panel-card chart-card">
+                <h3>Pipeline Kilometre Taşları</h3>
+                <p class="muted-note">İstek başlangıcından ilgili noktaya kadar toplam süre.</p>
+                <canvas id="perfMilestoneChart" height="260"></canvas>
+              </div>
+            </div>
+
+            <div class="panel-card">
+              <div class="e2e-trend-header">
+                <div>
+                  <h3>E2E Zaman Grafiği</h3>
+                  <p class="muted-note" id="e2eTrendDescription">Son 24 saatteki saatlik ortalama E2E süreleri.</p>
+                </div>
+                <div class="e2e-range-buttons" id="e2eTrendControls" aria-label="E2E grafik zaman aralığı">
+                  <button type="button" data-e2e-range="hour">Son 1 Saat</button>
+                  <button type="button" data-e2e-range="day" class="active">Son 24 Saat</button>
+                  <button type="button" data-e2e-range="week">Son 7 Gün</button>
+                </div>
+              </div>
+              <canvas id="e2eTrendCanvas" height="320"></canvas>
+            </div>
+
+            <div class="panel-card">
+              <h3>Son Ölçümler</h3>
+              <div class="table-scroll">
+                <table class="data-table" id="perfMetricsTable">
+                  <thead>
+                    <tr>
+                      <th>Zaman</th>
+                      <th>Kanal</th>
+                      <th>İndirme</th>
+                      <th>ASR</th>
+                      <th>AI</th>
+                      <th>AI Hazır</th>
+                      <th>Metin Gönder</th>
+                      <th>TTFB</th>
+                      <th>TTS</th>
+                      <th>TTS Hazır</th>
+                      <th>Ses Yükle</th>
+                      <th>Ses Oynatma</th>
+                      <th>Tool Toplam</th>
+                      <th>TTFS</th>
+                      <th>E2E</th>
+                      <th>Tam Tur</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <div class="pager" id="perfPager"></div>
+            </div>
+          </section>
+
+          <!-- GRAFANA MONITORING -->
+          <section id="tab-monitoring" class="tab-panel hidden">
+            <div class="panel-card monitoring-hero">
+              <div>
+                <span class="monitoring-kicker">Operasyon İzleme</span>
+                <h3>Grafana Monitoring</h3>
+                <p class="muted-note">
+                  CPU/RAM, HTTP trafiği, P95 gecikmeler, pipeline hataları,
+                  aktif ses bağlantıları ve merkezi uygulama logları.
+                </p>
+              </div>
+              <a id="grafanaDashboardLink" class="monitoring-link hidden" href="#" target="_blank" rel="noopener noreferrer">
+                Grafana Dashboard'u Aç ↗
+              </a>
+            </div>
+
+            <div class="kpi-grid monitoring-status-grid">
+              <div class="kpi-card"><span>Grafana Bağlantısı</span><strong id="monitoringGrafanaStatus">Kontrol ediliyor…</strong></div>
+              <div class="kpi-card"><span>Prometheus</span><strong id="monitoringMetricsStatus">–</strong></div>
+              <div class="kpi-card"><span>Merkezi JSON Log</span><strong id="monitoringLogsStatus">–</strong></div>
+              <div class="kpi-card"><span>Ortam</span><strong id="monitoringEnvironment">–</strong></div>
+            </div>
+
+            <div id="monitoringSetupNote" class="panel-card hidden">
+              <h3>Grafana adresi bekleniyor</h3>
+              <p class="muted-note">
+                Backend tarafında metrik ve log üretimi hazır. Canlı Grafana
+                kurulduktan sonra Render environment alanına
+                <code>GRAFANA_DASHBOARD_URL</code> eklenince bağlantı burada
+                otomatik görünecek.
+              </p>
+            </div>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
+    <script src="js/admin-shared.js"></script>
+    <!-- Sürüm parametresi, deploy sonrası tarayıcının eski tool render kodunu
+         cache'ten kullanmasını engeller. -->
+    <script src="js/admin-bot.js?v=20260731-21"></script>
+  </body>
+</html>

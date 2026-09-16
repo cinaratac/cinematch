@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CineMatch Blog — Film Üzerine Uzun Uzun</title>
+    <meta name="description" content="CineMatch bloggerlarının film incelemeleri, listeleri ve sinema yazıları." />
+    <meta name="theme-color" content="#080807" />
+    <link rel="canonical" href="https://cinematchsocial.com/blog" />
+    <meta property="og:locale" content="tr_TR" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CineMatch" />
+    <meta property="og:url" content="https://cinematchsocial.com/blog" />
+    <meta property="og:title" content="CineMatch Blog — Film Üzerine Uzun Uzun" />
+    <meta property="og:description" content="Film incelemeleri, listeler ve jenerikten sonra başlayan sinema yazıları." />
+    <meta property="og:image" content="https://cinematchsocial.com/images/app_logo.png?v=20260801-2" />
+    <meta property="og:image:secure_url" content="https://cinematchsocial.com/images/app_logo.png?v=20260801-2" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="CineMatch logosu" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="CineMatch Blog" />
+    <meta name="twitter:description" content="Film incelemeleri, listeler ve sinema yazıları." />
+    <meta name="twitter:image" content="https://cinematchsocial.com/images/app_logo.png?v=20260801-2" />
+    <link rel="apple-touch-icon" href="/images/app_logo.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="images/favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="images/favicon/favicon-16x16.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/cinebot-widget.css" />
+    <link rel="stylesheet" href="css/blog.css?v=20260801-1" />
+  </head>
+  <body data-blog-page="list">
+    <a class="skip-link" href="#blogMain">Yazılara geç</a>
+
+    <header class="blog-site-header">
+      <nav class="blog-nav page-frame" aria-label="Ana menü">
+        <a class="blog-brand" href="/">
+          <img src="images/app_logo.png" alt="" width="38" height="38" />
+          <span>CineMatch</span>
+        </a>
+        <div class="blog-nav-links">
+          <a href="/">Ana Sayfa</a>
+          <a class="active" href="/blog">Blog</a>
+          <a href="/haberler">Sinema Haberleri</a>
+        </div>
+      </nav>
+
+      <section class="blog-hero page-frame">
+        <p class="blog-eyebrow">CineMatch Yazıları / 2026</p>
+        <div class="blog-hero-layout">
+          <h1>Film biter.<br /><em>Yazı</em> kalır.</h1>
+          <p>
+            Bir sahnenin peşinden giden incelemeler, yeniden sıralanan listeler ve
+            jenerikten sonra başlayan sinema sohbetleri.
+          </p>
+        </div>
+      </section>
+    </header>
+
+    <main id="blogMain" class="blog-main page-frame">
+      <section class="blog-toolbar" aria-label="Blog filtreleri">
+        <div>
+          <p>Arşiv</p>
+          <h2>Son Yazılar</h2>
+          <span id="blogCount">Yükleniyor…</span>
+        </div>
+        <div class="blog-filters">
+          <label>
+            <span class="sr-only">Kategori</span>
+            <select id="blogCategory">
+              <option value="all">Tüm kategoriler</option>
+            </select>
+          </label>
+          <label>
+            <span class="sr-only">Blog yazısı ara</span>
+            <input id="blogSearch" type="search" placeholder="Başlık, yazar veya film ara" />
+          </label>
+        </div>
+      </section>
+
+      <section id="blogList" class="blog-grid" aria-live="polite">
+        <p class="blog-state">Yazılar hazırlanıyor…</p>
+      </section>
+    </main>
+
+    <footer class="blog-footer">
+      <div class="page-frame blog-footer-layout">
+        <a class="blog-brand" href="/">
+          <img src="images/app_logo.png" alt="" width="34" height="34" />
+          <span>CineMatch</span>
+        </a>
+        <p>Film orada bitmedi. Sadece salonun ışıkları yandı.</p>
+        <nav aria-label="Alt menü">
+          <a href="/">Ana Sayfa</a>
+          <a href="/haberler">Haberler</a>
+          <a href="gizlilik-sozlesmesi.pdf">Gizlilik</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="js/blog.js?v=20260801-2"></script>
+    <script src="js/cinebot-widget.js?v=20260731-2" defer></script>
+  </body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CineMatch Haber Paneli</title>
+    <link rel="apple-touch-icon" href="/images/app_logo.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="images/favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="images/favicon/favicon-16x16.png" />
+    <link rel="stylesheet" href="css/admin-news.css?v=20260801-1" />
+  </head>
+  <body>
+    <main class="admin-shell">
+      <section id="authLoadingPanel" class="auth-panel auth-loading" aria-live="polite">
+        <div class="brand-lockup">
+          <img src="images/app_logo.png" alt="CineMatch" />
+          <div><p>Yönetim Paneli</p><h1>Oturum kontrol ediliyor…</h1></div>
+        </div>
+        <div class="auth-spinner" aria-hidden="true"></div>
+      </section>
+
+      <section id="loginPanel" class="auth-panel hidden">
+        <div class="brand-lockup">
+          <img src="images/app_logo.png" alt="CineMatch" />
+          <div>
+            <p>Yönetim Paneli</p>
+            <h1>CineMatch Haberleri</h1>
+          </div>
+        </div>
+
+        <form id="loginForm" class="panel-card auth-form">
+          <label>
+            E-posta
+            <input id="loginEmail" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            Şifre
+            <input id="loginPassword" type="password" autocomplete="current-password" required />
+          </label>
+          <button id="loginButton" type="submit">Giriş Yap</button>
+          <p id="loginMessage" class="message"></p>
+        </form>
+      </section>
+
+      <section id="adminPanel" class="workspace hidden">
+        <aside class="sidebar">
+          <div class="brand-lockup compact">
+            <img src="images/app_logo.png" alt="CineMatch" />
+            <div>
+              <p>Haber Paneli</p>
+              <h1>CineMatch</h1>
+            </div>
+          </div>
+          <nav class="panel-nav">
+            <a class="active" href="/admin-news">Haber Paneli</a>
+            <a href="/admin-blog">Blog</a>
+            <a href="/admin-trivia">Soru Yarışması</a>
+            <a href="/admin-announcements">Duyurular</a>
+            <a href="/admin-bot">Bot Paneli</a>
+            <a href="/admin-social">Sosyal Medya</a>
+          </nav>
+          <button id="newArticleButton" class="primary-action" type="button">Yeni Haber</button>
+          <div class="article-toolbar">
+            <div>
+              <p>Mevcut Haberler</p>
+              <strong id="articleCount">0 haber</strong>
+            </div>
+            <input id="articleSearch" type="search" placeholder="Haber ara" />
+            <select id="articleStatusFilter">
+              <option value="all">Tüm durumlar</option>
+              <option value="draft">Taslak</option>
+              <option value="published">Yayında</option>
+              <option value="archived">Arşiv</option>
+            </select>
+          </div>
+          <div class="article-list" id="articleList"></div>
+          <button id="loadMoreArticlesButton" class="secondary-action hidden" type="button">Daha Fazla Yükle</button>
+        </aside>
+
+        <section class="editor">
+          <header class="editor-header">
+            <div>
+              <p id="currentUserLabel">Editör</p>
+              <h2>Haber Düzenle</h2>
+            </div>
+            <button id="logoutButton" type="button">Çıkış</button>
+          </header>
+
+          <form id="articleForm" class="panel-card editor-form">
+            <input id="articleId" type="hidden" />
+
+            <div class="form-grid two">
+              <label>
+                Durum
+                <select id="status">
+                  <option value="draft">Taslak</option>
+                  <option value="published">Yayında</option>
+                  <option value="archived">Arşiv</option>
+                </select>
+              </label>
+              <label>
+                Kategori
+                <select id="category">
+                  <option value="Haber">Haber</option>
+                  <option value="Eleştiri">Eleştiri</option>
+                  <option value="Vizyon">Vizyon</option>
+                  <option value="Festival">Festival</option>
+                  <option value="Dosya">Dosya</option>
+                </select>
+              </label>
+            </div>
+
+            <label>
+              Başlık
+              <input id="title" type="text" maxlength="180" required placeholder="Örn. Dune 3 için beklenti büyüyor" />
+            </label>
+
+            <label>
+              Slug
+              <input id="slug" type="text" maxlength="120" placeholder="dune-3-icin-beklenti-buyuyor" />
+            </label>
+
+            <label>
+              Kısa Özet
+              <textarea id="summary" maxlength="320" rows="3" placeholder="Liste ekranında görünecek kısa açıklama"></textarea>
+            </label>
+
+            <div class="form-grid two">
+              <label>
+                Film Adı
+                <input id="movieTitle" type="text" maxlength="120" placeholder="Opsiyonel" />
+              </label>
+              <label>
+                Etiketler
+                <input id="tags" type="text" placeholder="Dune, Bilim Kurgu, Vizyon" />
+              </label>
+            </div>
+
+            <label>
+              Görsel URL
+              <input id="imageUrl" type="url" placeholder="https://..." />
+            </label>
+
+            <label>
+              Kaynak Link
+              <input id="sourceUrl" type="url" placeholder="https://..." />
+            </label>
+
+            <label>
+              Haber Metni
+              <textarea id="body" rows="15" placeholder="Haberi burada yaz. Paragrafları boş satırla ayırabilirsin."></textarea>
+            </label>
+
+            <footer class="editor-actions">
+              <button id="deleteButton" class="danger" type="button">Sil</button>
+              <div>
+                <span id="saveMessage" class="message"></span>
+                <button id="saveButton" type="submit">Kaydet</button>
+              </div>
+            </footer>
+          </form>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
+    <script src="js/admin-shared.js"></script>
+    <script src="js/admin-news.js?v=20260722-1"></script>
+  </body>
+</html>

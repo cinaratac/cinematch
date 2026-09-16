@@ -1,0 +1,13 @@
+{
+  "projects": {
+    "default": "movie-matching-8a836"
+  },
+  "targets": {},
+  "etags": {
+    "movie-matching-8a836": {
+      "extensionInstances": {
+        "firestore-send-email": "ab3f52d28469ee4fb0a563151ab3a023e4b72071c27acc885a6a1767767fd483"
+      }
+    }
+  }
+}

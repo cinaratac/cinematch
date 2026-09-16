@@ -1,0 +1,98 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "movie-matching-8a836",
+          "appId": "1:266660427246:android:8fb16e780cb74f7ec04aff",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "movie-matching-8a836",
+          "appId": "1:266660427246:ios:39c6da0fae28c6f2c04aff",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "movie-matching-8a836",
+          "configurations": {
+            "android": "1:266660427246:android:8fb16e780cb74f7ec04aff",
+            "ios": "1:266660427246:ios:39c6da0fae28c6f2c04aff"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "site": "cinematchsocial",
+    "public": "public",
+    "cleanUrls": true,
+    "trailingSlash": false,
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "index copy.html",
+      "images/preview.png"
+    ],
+    "redirects": [
+      {
+        "source": "/blog-detail",
+        "destination": "/blog/yazi",
+        "type": 301
+      },
+      {
+        "source": "/news",
+        "destination": "/haberler",
+        "type": 301
+      },
+      {
+        "source": "/news-detail",
+        "destination": "/haber",
+        "type": 301
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "/blog/yazi",
+        "destination": "/blog-detail.html"
+      },
+      {
+        "source": "/haberler",
+        "destination": "/news.html"
+      },
+      {
+        "source": "/haber",
+        "destination": "/news-detail.html"
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "functions": [
+    {
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "source": "functions"
+    }
+  ],
+  "extensions": {
+    "firestore-send-email": "firebase/firestore-send-email@0.2.10"
+  }
+}

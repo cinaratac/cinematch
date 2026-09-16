@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Sahne Bulunamadı | CineMatch</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* GENEL AYARLAR */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Lato', sans-serif;
+            background-color: #121212; /* Uygulama ana rengi */
+            color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        /* IŞIK EFEKTİ (Arka plan) */
+        .spotlight {
+            position: absolute;
+            top: -50%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(76, 175, 80, 0.15) 0%, rgba(0,0,0,0) 70%); /* YEŞİL IŞIK */
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* İÇERİK KUTUSU */
+        .container {
+            z-index: 1;
+            padding: 20px;
+            max-width: 600px;
+        }
+
+        /* 404 YAZISI */
+        h1 {
+            font-size: 150px;
+            margin: 0;
+            line-height: 1;
+            font-weight: 900;
+            color: transparent;
+            -webkit-text-stroke: 2px #4CAF50; /* YEŞİL ÇERÇEVE */
+            background: url('data:image/svg+xml;utf8,<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p" width="40" height="40" patternUnits="userSpaceOnUse"><rect width="40" height="40" fill="%23121212"/><circle cx="20" cy="20" r="2" fill="%234CAF50"/></pattern></defs><rect width="100%" height="100%" fill="url(%23p)"/></svg>');
+            background-clip: text;
+            -webkit-background-clip: text;
+            animation: glitch 3s infinite alternate;
+        }
+
+        /* BAŞLIK VE AÇIKLAMA */
+        h2 {
+            font-size: 32px;
+            margin: 10px 0 20px 0;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        p {
+            font-size: 18px;
+            color: #a0a0a0;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        /* BUTON TASARIMI */
+        .btn {
+            display: inline-block;
+            padding: 15px 40px;
+            background-color: #4CAF50; /* YEŞİL BUTON */
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 16px;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+            text-transform: uppercase;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5);
+            background-color: #45a049;
+        }
+
+        /* SİNEMA ŞERİDİ DEKORU (Alt ve Üst) */
+        .film-strip {
+            position: absolute;
+            width: 100%;
+            height: 20px;
+            background-image: linear-gradient(to right, #000 50%, transparent 50%);
+            background-size: 40px 100%;
+            opacity: 0.3;
+        }
+        .top { top: 20px; border-top: 2px solid #333; border-bottom: 2px solid #333; }
+        .bottom { bottom: 20px; border-top: 2px solid #333; border-bottom: 2px solid #333; }
+
+        /* GLITCH ANİMASYONU */
+        @keyframes glitch {
+            0% { text-shadow: 2px 2px 0px #ff0000; }
+            50% { text-shadow: -2px -2px 0px #0000ff; }
+            100% { text-shadow: 2px -2px 0px #4CAF50; }
+        }
+
+        /* MOBİL UYUM */
+        @media (max-width: 600px) {
+            h1 { font-size: 100px; }
+            h2 { font-size: 24px; }
+            p { font-size: 16px; padding: 0 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="film-strip top"></div>
+    <div class="film-strip bottom"></div>
+
+    <div class="spotlight"></div>
+
+    <div class="container">
+        <h1>404</h1>
+        
+        <h2>KESTİK! SAHNE YOK.</h2>
+        <p>
+            Aradığın sayfa kurgu masasında atılmış veya senaryodan tamamen çıkarılmış. 
+            Burada izlenecek bir şey kalmadı.
+        </p>
+
+        <a href="/" class="btn">ANA SAHNEYE DÖN</a>
+    </div>
+
+</body>
+</html>

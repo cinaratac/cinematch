@@ -1,0 +1,517 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isNewsEditor() {
+      return signedIn() && (
+        request.auth.uid in [
+          "RfpPtaZfaKYueG9b2dd2ASScqOO2",
+          "ZkXr7PmQ4WV0iRIVR7uUUwfNS8N2",
+          "mNCWixSnJSa6tE1hZs4iZwn3Du43"
+        ] ||
+        (
+          exists(/databases/$(database)/documents/news_editors/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/news_editors/$(request.auth.uid)).data.active != false
+        ) ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["admin", "editor", "newsEditor"]
+        )
+      );
+    }
+
+    match /public_news/{articleId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /news_articles/{articleId} {
+      allow read: if isNewsEditor();
+      allow write: if false;
+    }
+
+    // Blog taslakları ve blogger yetkileri yalnızca Cloud Functions üzerinden
+    // yönetilir. Web sitesi sadece yayınlanan güvenli kopyayı okur.
+    match /public_blog_posts/{postId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /blog_posts/{postId} {
+      allow read, write: if false;
+    }
+
+    match /blog_editors/{uid} {
+      allow read, write: if false;
+    }
+
+    /* helpers */
+    function isAuthed() {
+      return request.auth != null;
+    }
+
+    function me() {
+      return request.auth.uid;
+    }
+
+    function keepsRegistrationStateProtected() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return !changed.hasAny([
+        'registrationStatus',
+        'onboardingCompleted',
+        'onboardingCompletedAt',
+        'registrationVersion'
+      ]) ||
+      (
+        request.resource.data.registrationStatus == 'onboarding' &&
+        (!('onboardingCompleted' in request.resource.data) ||
+          request.resource.data.onboardingCompleted != true) &&
+        !('onboardingCompletedAt' in request.resource.data)
+      );
+    }
+
+    // Kullanıcının iki kişilik kaydın katılımcısı olup olmadığını kontrol eder.
+    function isParticipant(data) {
+      return ('users' in data && data.users.hasAny([me()])) ||
+        ('uids' in data && data.uids.hasAny([me()]));
+    }
+
+    // Eşleşme veri yapısının iki farklı katılımcıdan oluştuğunu doğrular.
+    function isValidParticipantStructure(data) {
+      let validUsers = 'users' in data && data.users is list &&
+        data.users.size() == 2 && data.users[0] != data.users[1];
+      let validUids = 'uids' in data && data.uids is list &&
+        data.uids.size() == 2 && data.uids[0] != data.uids[1];
+      return (validUsers || validUids) && isParticipant(data);
+    }
+
+    /* ------ users ------ */
+    match /users/{uid} {
+      allow read: if true;
+      allow create: if false;
+      allow update: if isAuthed() && me() == uid &&
+        keepsRegistrationStateProtected();
+      // Hesap silme yalnızca OTP/provider doğrulamalı Cloud Function üzerinden
+      // yapılır; istemci ana profil belgesini doğrudan silemez.
+      allow delete: if false;
+
+      allow update: if isAuthed() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalUnreadCount']);
+
+      match /watchlist/{document=**} {
+        allow read: if isAuthed();
+        allow write: if isAuthed() && me() == uid;
+      }
+
+      match /watched/{document=**} {
+        allow read, write: if isAuthed() && me() == uid;
+      }
+
+      // Diary girdileri profil ekranlarında görülebilir; yalnızca profil sahibi
+      // kendi izleme geçmişine kayıt ekleyebilir veya kayıtlarını düzenleyebilir.
+      function isValidDiaryEntry(entryId) {
+        let entry = request.resource.data;
+        return entry.keys().hasAll([
+            'id',
+            'movieKey',
+            'tmdbId',
+            'title',
+            'posterUrl',
+            'watchedAt',
+            'recordedAt',
+            'source'
+          ]) &&
+          entry.keys().hasOnly([
+            'id',
+            'movieKey',
+            'tmdbId',
+            'title',
+            'posterUrl',
+            'releaseYear',
+            'watchedAt',
+            'recordedAt',
+            'source'
+          ]) &&
+          entry.id == entryId &&
+          entry.id is string && entry.id.size() > 0 && entry.id.size() <= 500 &&
+          entry.movieKey is string &&
+            entry.movieKey.size() > 0 && entry.movieKey.size() <= 300 &&
+          (entry.tmdbId == null || entry.tmdbId is int) &&
+          entry.title is string &&
+            entry.title.size() > 0 && entry.title.size() <= 180 &&
+          entry.posterUrl is string && entry.posterUrl.size() <= 1200 &&
+          (!('releaseYear' in entry) || entry.releaseYear is int) &&
+          entry.watchedAt is timestamp &&
+          entry.recordedAt == request.time &&
+          entry.source is string &&
+            entry.source.size() > 0 && entry.source.size() <= 64;
+      }
+
+      match /diary/{entryId} {
+        allow read: if isAuthed();
+        allow create: if isAuthed() && me() == uid &&
+          isValidDiaryEntry(entryId);
+        allow update: if isAuthed() && me() == uid &&
+          isValidDiaryEntry(entryId) &&
+          request.resource.data.id == resource.data.id &&
+          request.resource.data.movieKey == resource.data.movieKey;
+        allow delete: if false;
+      }
+
+      match /shelves/{shelfId} {
+        allow read: if isAuthed();
+        allow write: if isAuthed() && me() == uid;
+
+        match /items/{itemId} {
+          allow read: if isAuthed();
+          allow write: if isAuthed() && me() == uid;
+        }
+      }
+
+      /* TAKİP SİSTEMİ */
+      match /following/{otherUid} {
+        allow read: if isAuthed();
+        allow create, delete: if isAuthed() && me() == uid && otherUid != uid;
+        allow update: if false;
+      }
+
+      match /followers/{followerUid} {
+        allow read: if isAuthed();
+        allow create, delete: if isAuthed() && me() == followerUid && followerUid != uid;
+        allow update: if false;
+      }
+
+      match /notifications/{notificationId} {
+        allow create: if isAuthed();
+        allow read, update, delete: if isAuthed() && me() == uid;
+      }
+
+      match /blocked/{targetId} {
+        allow read, write: if isAuthed() && me() == uid;
+      }
+
+      match /blockedBy/{blockerId} {
+        allow read: if isAuthed() && me() == uid;
+        allow write: if isAuthed() && me() == blockerId;
+      }
+
+      match /fcmTokens/{token} {
+        allow read, write: if isAuthed() && me() == uid;
+      }
+
+      match /recommendations/{docId} {
+        allow read, write: if isAuthed() && me() == uid;
+      }
+    }
+
+    // Tamamlanmamış üyelik bilgileri genel users profilinden ayrı ve özeldir.
+    // active durumuna geçiş yalnızca completeOnboarding Cloud Function'ında olur.
+    match /registration_drafts/{uid} {
+      allow read, delete: if isAuthed() && me() == uid;
+      allow create: if isAuthed() && me() == uid &&
+        !request.resource.data.keys().hasAny([
+          'emailVerified',
+          'emailVerifiedAt'
+        ]);
+      allow update: if isAuthed() && me() == uid &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'emailVerified',
+          'emailVerifiedAt'
+        ]);
+    }
+
+    // Kod hash'i, deneme sayacı ve mail kuyruğu yalnızca Admin SDK tarafından
+    // yönetilir. İstemci doğrulama durumunu kendi başına değiştiremez.
+    match /email_verifications/{uid} {
+      allow read, write: if false;
+    }
+
+    match /mail/{mailId} {
+      allow read, write: if false;
+    }
+
+    match /password_reset_requests/{requestId} {
+      allow read, write: if false;
+    }
+
+    match /usernames/{username} {
+      allow read, write: if false;
+    }
+
+    match /system/announcement {
+      allow read: if true;
+    }
+
+    match /system/{doc} {
+      allow read: if true;
+    }
+
+    match /marketing_emails/{uid} {
+      allow read, write: if isAuthed() && me() == uid;
+    }
+
+    /* ------ userTasteProfiles ------ */
+    match /userTasteProfiles/{uid} {
+      allow read: if isAuthed();
+      allow write: if isAuthed() && me() == uid;
+    }
+
+    /* ------ catalog_films ------ */
+    match /catalog_films/{document=**} {
+      allow read: if true;
+      // Poster ve film kimlikleri yalnızca doğrulama yapan Cloud Functions
+      // tarafından Admin SDK ile yazılır. İstemciden URL enjeksiyonunu engeller.
+      allow write: if false;
+    }
+
+    /* ------ login_posters ------ */
+    match /login_posters/{posterId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    /* ------ userAddedFilms ------ */
+    match /userAddedFilms/{filmId} {
+      allow read: if true;
+      allow create: if isAuthed();
+      allow update, delete: if isAuthed() && request.auth.uid == resource.data.authorId;
+    }
+
+    /* ------ likeLogs ------ */
+    match /likeLogs/{logId} {
+      allow create, read: if isAuthed();
+      allow delete: if isAuthed() &&
+        (resource.data.from == me() || resource.data.to == me());
+    }
+
+    /* ------ likes ------ */
+    match /likes/{pairId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function getUid() {
+        return request.auth.uid;
+      }
+
+      allow read, update, delete: if isSignedIn() && (
+        getUid() in resource.data.uids ||
+        getUid() == resource.data.a ||
+        getUid() == resource.data.b
+      );
+
+      allow create: if isSignedIn() && getUid() in request.resource.data.uids;
+    }
+
+    /* ------ matches ------ */
+    match /matches/{matchId} {
+      allow read: if isAuthed() && isParticipant(resource.data);
+      allow create, update: if isAuthed() &&
+        isValidParticipantStructure(request.resource.data);
+      allow delete: if isAuthed() && isParticipant(resource.data);
+    }
+
+    /* ------ clubs ------ */
+    match /clubs/{clubId} {
+      allow read: if isAuthed();
+      allow create: if isAuthed() && request.resource.data.ownerId == me();
+      allow update: if isAuthed();
+      allow delete: if isAuthed() && resource.data.ownerId == me();
+
+      match /events/{eventId} {
+        allow read: if request.auth != null &&
+          request.auth.uid in get(/databases/$(database)/documents/clubs/$(clubId)).data.members;
+        allow create, delete: if request.auth != null &&
+          request.auth.uid in get(/databases/$(database)/documents/clubs/$(clubId)).data.admins;
+        allow update: if request.auth != null &&
+          request.auth.uid in get(/databases/$(database)/documents/clubs/$(clubId)).data.members;
+      }
+
+      match /polls/{pollId} {
+        allow read: if request.auth != null &&
+          request.auth.uid in get(/databases/$(database)/documents/clubs/$(clubId)).data.members;
+        allow create, delete: if request.auth != null &&
+          request.auth.uid in get(/databases/$(database)/documents/clubs/$(clubId)).data.admins;
+        allow update: if request.auth != null &&
+          request.auth.uid in get(/databases/$(database)/documents/clubs/$(clubId)).data.members;
+      }
+    }
+
+    /* ------ chats ------ */
+    match /chats/{chatId} {
+      allow create: if isAuthed() &&
+        request.resource.data.participants is list &&
+        request.resource.data.participants.hasAny([me()]);
+      allow read, update: if isAuthed();
+      allow delete: if isAuthed() && resource.data.ownerId == me();
+
+      match /reads/{uid} {
+        allow read, write: if isAuthed() &&
+          get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([me()]);
+      }
+
+      match /messages/{mid} {
+        allow read: if isAuthed();
+        allow create: if isAuthed();
+        // Mesaj içeriği değiştirilemez; istemci yalnızca reaksiyon özetini
+        // güncelleyebilir.
+        allow update: if isAuthed() &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']);
+      }
+    }
+
+    /* ------ feeds ------ */
+    match /feeds/{userId}/user_feed/{document=**} {
+      allow read: if isAuthed() && me() == userId;
+      allow write: if false;
+    }
+
+    /* ------ posts ------ */
+    match /posts/{postId} {
+      allow read: if true;
+
+      allow create: if isAuthed() &&
+        request.resource.data.authorId == me() &&
+        request.resource.data.text is string &&
+        request.resource.data.text.size() <= 280 &&
+        request.resource.data.likeCount == 0 &&
+        request.resource.data.replyCount == 0;
+
+      allow update: if isAuthed() &&
+        resource.data.authorId == me() &&
+        _ownerEditOnly();
+
+      allow update: if isAuthed() && _onlyCountersChanged();
+      allow delete: if isAuthed() && resource.data.authorId == me();
+
+      match /likes/{uid} {
+        allow read: if isAuthed();
+        allow create, delete: if isAuthed() && uid == me();
+        allow update: if false;
+      }
+
+      match /replies/{replyId} {
+        allow read: if isAuthed();
+        allow create: if isAuthed() && request.resource.data.authorId == me();
+        allow update, delete: if isAuthed();
+
+        match /likes/{userId} {
+          allow read: if isAuthed();
+          allow write: if isAuthed() && me() == userId;
+        }
+
+        match /subReplies/{subReplyId} {
+          allow read: if isAuthed();
+          allow create: if isAuthed() && request.resource.data.authorId == me();
+          allow update, delete: if isAuthed();
+
+          match /likes/{userId} {
+            allow read: if isAuthed();
+            allow write: if isAuthed() && me() == userId;
+          }
+        }
+      }
+    }
+
+    /* ------ custom_lists ------ */
+    match /custom_lists/{listId} {
+      allow read: if isAuthed();
+      allow create: if isAuthed() && request.resource.data.ownerId == me();
+      allow update, delete: if isAuthed() && resource.data.ownerId == me();
+
+      match /items/{itemId} {
+        allow read: if isAuthed();
+        allow write: if isAuthed() &&
+          get(/databases/$(database)/documents/custom_lists/$(listId)).data.ownerId == me();
+      }
+    }
+
+    match /account_delete_requests/{uid} {
+      allow read, write: if false;
+    }
+
+    // Kod hash'i ve kısa süreli silme yetkisi yalnızca Admin SDK tarafından
+    // yönetilir. Ayrılma nedenleri kimliksiz olarak ayrı koleksiyonda tutulur.
+    match /account_deletion_verifications/{uid} {
+      allow read, write: if false;
+    }
+
+    match /account_deletion_feedback/{feedbackId} {
+      allow read, write: if false;
+    }
+
+    /* ------ reports ------ */
+    match /reports/{reportId} {
+      allow create: if isAuthed();
+      allow read, update, delete: if false;
+    }
+
+    /* Collection group likes sorgusu */
+    match /{path=**}/likes/{likeId} {
+      allow read: if isAuthed() && resource.data.by == request.auth.uid;
+    }
+
+    /* --------- rule helper functions --------- */
+    function _changedKeys() {
+      return request.resource.data.diff(resource.data).changedKeys();
+    }
+
+    function _onlyCountersChanged() {
+      let changed = _changedKeys();
+      return changed.hasOnly(['likeCount', 'replyCount', 'repostCount', 'updatedAt']) &&
+        request.resource.data.likeCount is number &&
+        request.resource.data.replyCount is number &&
+        request.resource.data.updatedAt is timestamp &&
+        request.resource.data.likeCount >= 0;
+    }
+
+    function _ownerEditOnly() {
+      let changed = _changedKeys();
+      return changed.hasOnly([
+        'text',
+        'visibility',
+        'displayName',
+        'handle',
+        'photoURL'
+      ]) &&
+      request.resource.data.text is string &&
+      request.resource.data.text.size() <= 280;
+    }
+
+    /* ------ trivia_questions ------ */
+    match /trivia_questions/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    /* ------ trivia results ------ */
+    match /users/{userId}/trivia_results/{resultId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    /* ------ weekly leaderboard ------ */
+    match /weekly_leaderboard/{weekId}/scores/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    /* ------ trivia history ------ */
+    match /users/{userId}/trivia_history/{docId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    /* ------ saved lists ------ */
+    match /users/{userId}/saved_lists/{listId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    /* default deny */
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,35 @@
+// Firebase Console > Firestore Database > Rules ekranında,
+// mevcut `match /databases/{database}/documents { ... }` bloğunun içine ekleyin.
+// Mevcut rules dosyanızın tamamını bununla değiştirmeyin.
+
+function signedIn() {
+  return request.auth != null;
+}
+
+function isNewsEditor() {
+  return signedIn() && (
+    request.auth.uid in [
+      "RfpPtaZfaKYueG9b2dd2ASScqOO2",
+      "ZkXr7PmQ4WV0iRIVR7uUUwfNS8N2",
+      "mNCWixSnJSa6tE1hZs4iZwn3Du43"
+    ] ||
+    (
+      exists(/databases/$(database)/documents/news_editors/$(request.auth.uid)) &&
+      get(/databases/$(database)/documents/news_editors/$(request.auth.uid)).data.active != false
+    ) ||
+    (
+      exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["admin", "editor", "newsEditor"]
+    )
+  );
+}
+
+match /public_news/{articleId} {
+  allow read: if true;
+  allow write: if false;
+}
+
+match /news_articles/{articleId} {
+  allow read: if isNewsEditor();
+  allow write: if false;
+}
