@@ -1,10 +1,12 @@
 /* eslint-disable */
 const functions = require("firebase-functions/v1"); // v1 Triggerlar için
 const { onCall, HttpsError } = require("firebase-functions/v2/https"); // v2 Callable fonksiyonlar için
+const { onTaskDispatched } = require("firebase-functions/v2/tasks");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const crypto = require("crypto");
 const sanitizeHtml = require("sanitize-html");
+const { createLetterboxdSync } = require("./letterboxd_sync");
 
 // Firebase Admin'i başlat
 if (admin.apps.length === 0) {
@@ -1417,6 +1419,8 @@ exports.completeOnboarding = onCall(async (request) => {
     .update(`${uid}|onboarding|${favoriteMovieKey}`)
     .digest("hex");
   const diaryRef = userRef.collection("diary").doc(diaryEventId);
+  const letterboxdIntegrationRef = userRef.collection("integrations")
+    .doc("letterboxd");
 
   await db.runTransaction(async (transaction) => {
     const [userDoc, draftDoc, catalogDoc, verificationDoc] = await Promise.all([
@@ -1534,8 +1538,11 @@ exports.completeOnboarding = onCall(async (request) => {
       recentDiaryEntries: [diaryEntry],
       diaryUpdatedAt: now,
       filmSources: { [favoriteMovieKey]: "manual" },
-      letterboxdUsername,
-      letterboxdUsername_lc: letterboxdUsername.toLowerCase(),
+      // Canonical kullanıcı adı yalnızca sunucu Letterboxd profilini okuyup
+      // eksiksiz snapshotı başarıyla yazdıktan sonra değiştirilir.
+      letterboxdUsername: admin.firestore.FieldValue.delete(),
+      letterboxdUsername_lc: admin.firestore.FieldValue.delete(),
+      pendingLetterboxdUsername: admin.firestore.FieldValue.delete(),
       registrationStatus: "active",
       onboardingCompleted: true,
       onboardingCompletedAt: now,
@@ -1554,6 +1561,16 @@ exports.completeOnboarding = onCall(async (request) => {
       ...diaryEntry,
       recordedAt: now,
     });
+
+    if (letterboxdUsername) {
+      transaction.set(letterboxdIntegrationRef, {
+        provider: "letterboxd",
+        schemaVersion: 2,
+        pendingUsername: letterboxdUsername.toLowerCase(),
+        status: "pending_request",
+        updatedAt: now,
+      }, { merge: true });
+    }
 
     const marketingRef = db.collection("marketing_emails").doc(uid);
     if (marketingConsent && email) {
@@ -3319,8 +3336,120 @@ exports.resolveCatalogMovie = onCall(
   }
 );
 
+async function resolveLetterboxdCatalogBatch(rawFilms, { maxItems = 50 } = {}) {
+  const input = Array.isArray(rawFilms) ? rawFilms.slice(0, maxItems) : [];
+  const seen = new Set();
+  const films = input.map((film) => ({
+    catalogKey: validCatalogKey(film && (film.key || film.catalogKey)),
+    title: cleanText(film && film.title, 180),
+    year: positiveInteger(film && (film.year || film.releaseYear)),
+  })).filter((film) =>
+    film.catalogKey && film.title && !seen.has(film.catalogKey) && seen.add(film.catalogKey)
+  );
+  const results = new Map();
+  if (!films.length) return results;
+
+  const db = admin.firestore();
+  const existingDocs = await db.getAll(...films.map((film) =>
+    db.collection("catalog_films").doc(film.catalogKey)
+  ));
+  const existingByKey = new Map(existingDocs.map((doc) => [doc.id, doc]));
+  let cursor = 0;
+
+  async function worker() {
+    while (cursor < films.length) {
+      const film = films[cursor++];
+      const existingDoc = existingByKey.get(film.catalogKey);
+      const existing = existingDoc && existingDoc.exists
+        ? existingDoc.data() || {}
+        : {};
+      const existingTmdbId = positiveInteger(existing.tmdbId);
+      const existingTitle = cleanText(existing.title, 180);
+      const existingPosterPath = validPosterPath(existing.posterPath) ||
+        posterPathFromTmdbUrl(existing.posterUrl);
+      const existingPosterUrl = existingPosterPath
+        ? tmdbPosterUrl(existingPosterPath)
+        : "";
+      if (existingTmdbId && existingTitle && existingPosterUrl) {
+        results.set(film.catalogKey, {
+          catalogKey: film.catalogKey,
+          docId: cleanText(existing.canonicalKey, 500) || existingDoc.id,
+          tmdbId: existingTmdbId,
+          title: existingTitle,
+          originalTitle: cleanText(existing.originalTitle, 180),
+          year: positiveInteger(existing.year),
+          posterPath: existingPosterPath,
+          posterUrl: existingPosterUrl,
+        });
+        continue;
+      }
+
+      const result = await resolveAndUpsertCatalogMovie({
+        db,
+        tmdbId: existingTmdbId,
+        title: film.title,
+        year: film.year,
+        catalogKey: film.catalogKey,
+        source: "letterboxd",
+      });
+      if (result) {
+        results.set(film.catalogKey, {
+          catalogKey: film.catalogKey,
+          ...result,
+        });
+      } else {
+        await removeUntrustedCatalogPoster(
+          db,
+          film.catalogKey,
+          film.title,
+          film.year
+        );
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(5, films.length) }, worker));
+  return results;
+}
+
+async function consumeLegacyCatalogImportQuota(uid, requestedItems) {
+  const db = admin.firestore();
+  const ref = db.collection("users").doc(uid)
+    .collection("functionRateLimits").doc("letterboxdCatalogImport");
+  const nowMs = Date.now();
+  const windowMs = 24 * 60 * 60 * 1000;
+  const maxItems = 1000;
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    const data = snapshot.data() || {};
+    const startedAt = timestampMillis(data.windowStartedAt);
+    const activeWindow = startedAt > 0 && nowMs - startedAt < windowMs;
+    const used = activeWindow ? Math.max(0, Number(data.items) || 0) : 0;
+    if (used + requestedItems > maxItems) {
+      throw new HttpsError(
+        "resource-exhausted",
+        "Günlük katalog içe aktarma sınırına ulaşıldı."
+      );
+    }
+    const now = admin.firestore.FieldValue.serverTimestamp();
+    transaction.set(ref, {
+      windowStartedAt: activeWindow ? data.windowStartedAt : now,
+      items: used + requestedItems,
+      updatedAt: now,
+    }, { merge: true });
+  });
+}
+
+
 exports.importLetterboxdCatalog = onCall(
-  { secrets: ["TMDB_ACCESS_TOKEN"], timeoutSeconds: 300, memory: "512MiB" },
+  {
+    secrets: ["TMDB_ACCESS_TOKEN"],
+    timeoutSeconds: 300,
+    memory: "512MiB",
+    // Eski mağaza sürümleri geçerli App Check tokenı üretmiyor. Bu geçiş
+    // süresinde Auth + kullanıcı başına günlük kota korunarak erişim sağlanır.
+    enforceAppCheck: false,
+  },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Oturum açmanız gerekiyor.");
@@ -3328,6 +3457,9 @@ exports.importLetterboxdCatalog = onCall(
     const rawFilms = Array.isArray(request.data && request.data.films)
       ? request.data.films.slice(0, 50)
       : [];
+    if (rawFilms.length) {
+      await consumeLegacyCatalogImportQuota(request.auth.uid, rawFilms.length);
+    }
     const films = rawFilms.map((film) => ({
       catalogKey: validCatalogKey(film && film.key),
       title: cleanText(film && film.title, 180),
@@ -3411,6 +3543,50 @@ exports.importLetterboxdCatalog = onCall(
       films: resolvedFilms.filter(Boolean),
     };
   }
+);
+
+const letterboxdSync = createLetterboxdSync({
+  resolveCatalogFilms: (films) => resolveLetterboxdCatalogBatch(films, { maxItems: 50 }),
+});
+
+exports.requestLetterboxdSync = onCall(
+  {
+    timeoutSeconds: 60,
+    memory: "256MiB",
+    enforceAppCheck: true,
+  },
+  letterboxdSync.requestSync
+);
+
+exports.disconnectLetterboxd = onCall(
+  {
+    timeoutSeconds: 540,
+    memory: "512MiB",
+    // Veri silen bağlantı kaldırma işlemi App Check korumasını sürdürür.
+    enforceAppCheck: true,
+  },
+  letterboxdSync.disconnect
+);
+
+exports.processLetterboxdSyncTask = onTaskDispatched(
+  {
+    secrets: ["TMDB_ACCESS_TOKEN"],
+    timeoutSeconds: 1800,
+    memory: "1GiB",
+    maxInstances: 2,
+    concurrency: 1,
+    retryConfig: {
+      maxAttempts: 5,
+      minBackoffSeconds: 5,
+      maxBackoffSeconds: 300,
+      maxDoublings: 5,
+    },
+    rateLimits: {
+      maxConcurrentDispatches: 2,
+      maxDispatchesPerSecond: 1,
+    },
+  },
+  letterboxdSync.processTask
 );
 
 exports.backfillCatalogPosters = onCall(

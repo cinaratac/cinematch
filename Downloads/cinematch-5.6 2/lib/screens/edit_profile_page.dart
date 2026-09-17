@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fluttergirdi/services/user_profile_service.dart';
 import 'package:fluttergirdi/services/letterboxd_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
@@ -260,7 +259,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ),
       );
 
-      await LetterboxdService.fullSyncOnboarding(
+      final result = await LetterboxdService.requestFullSync(
         uid: user.uid,
         lbUsername: currLb,
         source: 'manual_edit_profile',
@@ -268,8 +267,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Letterboxd verileri başarıyla güncellendi!'),
+        SnackBar(
+          content: Text(
+            result == LetterboxdSyncState.completed
+                ? 'Letterboxd verileri başarıyla güncellendi!'
+                : 'Senkronizasyon başlatıldı; veriler arka planda aktarılıyor.',
+          ),
           backgroundColor: Color(0xFF2E7D32),
         ),
       );
@@ -447,19 +450,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       payload['favActors'] = _favActors;
       payload['favGenres'] = _selectedGenres.toList();
 
-      bool lbChanged = _origLb != currLb;
-      if (lbChanged) {
-        payload['letterboxdUsername'] = currLb.isNotEmpty
-            ? currLb
-            : FieldValue.delete();
-        payload['letterboxdUsername_lc'] = currLb.isNotEmpty
-            ? currLb
-            : FieldValue.delete();
-        payload['lbUsername'] = currLb.isNotEmpty
-            ? currLb
-            : FieldValue.delete();
-        await UserProfileService.instance.clearTasteProfile(user.uid);
-      }
+      final lbChanged = (_origLb ?? '') != currLb;
 
       payload['updatedAt'] = FieldValue.serverTimestamp();
 
@@ -468,13 +459,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           .doc(user.uid)
           .set(payload, SetOptions(merge: true));
 
-      final sp = await SharedPreferences.getInstance();
-      if (currLb.isNotEmpty) {
-        await sp.setString('lb_username_${user.uid}', currLb);
-      } else {
-        await sp.remove('lb_username_${user.uid}');
-      }
-
+      LetterboxdSyncState? letterboxdState;
       if (lbChanged && currLb.isNotEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -484,13 +469,37 @@ class _EditProfilePageState extends State<EditProfilePage> {
             ),
           );
         }
-        try {
-          await LetterboxdService.fullSyncOnboarding(
-            uid: user.uid,
-            lbUsername: currLb,
-            source: 'profile_username_change',
+        letterboxdState = await LetterboxdService.requestFullSync(
+          uid: user.uid,
+          lbUsername: currLb,
+          source: 'profile_username_change',
+        );
+      } else if (lbChanged) {
+        await LetterboxdService.disconnect(uid: user.uid);
+      }
+
+      final sp = await SharedPreferences.getInstance();
+      if (lbChanged && currLb.isEmpty) {
+        await sp.remove('lb_username_${user.uid}');
+      } else if (lbChanged &&
+          letterboxdState == LetterboxdSyncState.completed) {
+        await sp.setString('lb_username_${user.uid}', currLb);
+      }
+
+      if (lbChanged) {
+        if (mounted) {
+          final text = currLb.isEmpty
+              ? 'Letterboxd bağlantısı kaldırıldı.'
+              : letterboxdState == LetterboxdSyncState.completed
+              ? 'Profil ve Letterboxd verileri güncellendi.'
+              : 'Profil güncellendi; Letterboxd aktarımı arka planda devam ediyor.';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(text),
+              backgroundColor: const Color(0xFF2E7D32),
+            ),
           );
-        } catch (_) {}
+        }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -505,7 +514,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
       _origUsername = username.isNotEmpty ? username : null;
       _origBio = bio.isNotEmpty ? bio : null;
       _origAge = age;
-      _origLb = currLb.isNotEmpty ? currLb : null;
+      if (letterboxdState != LetterboxdSyncState.inProgress) {
+        _origLb = currLb.isNotEmpty ? currLb : null;
+      }
 
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
@@ -769,6 +780,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         primaryColor: primaryGreen,
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) return null;
+                          if (v.trim().length < 2 || v.trim().length > 40) {
+                            return '2–40 karakter olmalı';
+                          }
                           final ok = RegExp(
                             r'^[A-Za-z0-9_\-.]+$',
                           ).hasMatch(v.trim());

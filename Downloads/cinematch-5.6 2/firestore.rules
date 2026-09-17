@@ -111,6 +111,13 @@ service cloud.firestore {
         allow read, write: if isAuthed() && me() == uid;
       }
 
+      // Letterboxd işçisi bu belgeye Admin SDK ile yazar. İstemci yalnızca
+      // kendi aktarımının ilerleme/başarı/hata durumunu dinleyebilir.
+      match /integrations/{provider} {
+        allow read: if isAuthed() && me() == uid;
+        allow write: if false;
+      }
+
       // Diary girdileri profil ekranlarında görülebilir; yalnızca profil sahibi
       // kendi izleme geçmişine kayıt ekleyebilir veya kayıtlarını düzenleyebilir.
       function isValidDiaryEntry(entryId) {

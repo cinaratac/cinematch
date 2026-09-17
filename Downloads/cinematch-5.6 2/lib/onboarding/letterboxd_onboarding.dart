@@ -1299,24 +1299,21 @@ class _OnboardingLetterboxdState extends State<OnboardingLetterboxd>
         debugPrint('Firebase Auth profil fotoğrafı güncellenemedi: $error');
       }
 
+      // Letterboxd, veri merkezi isteklerine challenge sayfası döndürebildiği
+      // için aktarım kullanıcının cihaz bağlantısından tamamlanır. Bu await,
+      // profil açılmadan önce Firestore yazımının gerçekten bitmesini sağlar.
+      if (lbUsernameRaw.isNotEmpty) {
+        await LetterboxdService.requestFullSync(
+          uid: uid,
+          lbUsername: lbUsernameRaw,
+          source: 'onboarding',
+        );
+      }
+
       _draftUid = null;
       _draftDebounce?.cancel();
       await _draftWriteQueue;
       await OnboardingDraftService.clear(uid);
-
-      // Letterboxd isteğe bağlı bir zenginleştirmedir. Temel hesabın atomik
-      // tamamlanmasını engellemez; başarısızsa kullanıcı daha sonra eşitleyebilir.
-      if (lbUsernameRaw.isNotEmpty) {
-        try {
-          await LetterboxdService.fullSyncOnboarding(
-            uid: uid,
-            lbUsername: lbUsernameRaw,
-            source: 'onboarding',
-          );
-        } catch (error) {
-          debugPrint('Onboarding Letterboxd eşitlemesi ertelendi: $error');
-        }
-      }
 
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -1345,6 +1342,9 @@ class _OnboardingLetterboxdState extends State<OnboardingLetterboxd>
             : 'Oturumun doğrulanamadı. Kayıt bilgilerin korundu; internet bağlantını kontrol edip tekrar dene.';
       } else if (e is FirebaseFunctionsException && e.code == 'internal') {
         msg = 'Film bilgileri kaydedilirken sunucu hatası oluştu. Tekrar dene.';
+      } else if (e is LetterboxdSyncException) {
+        msg =
+            'Profilin oluşturuldu ancak Letterboxd aktarımı tamamlanamadı: ${e.message} Tekrar deneyebilirsin.';
       } else if (e.toString().contains('Letterboxd kullanıcısı bulunamadı')) {
         msg =
             'Girdiğin Letterboxd kullanıcı adı bulunamadı. Lütfen kontrol et.';

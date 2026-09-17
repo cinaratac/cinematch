@@ -6,6 +6,7 @@ import 'package:html/dom.dart' as dom;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:fluttergirdi/models/diary_entry.dart';
 
@@ -123,8 +124,10 @@ class LetterboxdSyncException implements Exception {
   String toString() => message;
 }
 
+enum LetterboxdSyncState { completed, inProgress }
+
 class LetterboxdService {
-  static final Map<String, Future<void>> _activeSyncs = {};
+  static final Map<String, Future<LetterboxdSyncState>> _activeClientSyncs = {};
 
   static String _cacheKeyFor(String username) =>
       'lb_cache_${username.toLowerCase()}';
@@ -215,35 +218,43 @@ class LetterboxdService {
     required String cacheSuffix,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    http.Response? res;
     final tries = [
       Uri.parse('https://letterboxd.com/$username/films/rated/$rating/'),
       Uri.parse('https://letterboxd.com/$username/films/ratings/$rating/'),
     ];
-
-    for (final u in tries) {
-      final r = await _Http.get(u, headers: _reqHeaders);
-      if (r != null && r.statusCode == 200) {
-        res = r;
+    final items = <LetterboxdFilm>[];
+    Uri? next;
+    for (final candidate in tries) {
+      final response = await _Http.get(candidate, headers: _reqHeaders);
+      if (response != null && response.statusCode == 200) {
+        next = candidate;
         break;
       }
     }
+    if (next == null) throw Exception('$rating★ sayfası alınamadı');
 
-    if (res == null) throw Exception('$rating★ sayfası alınamadı');
-
-    final doc = html.parse(res.body);
-    final candidates = <dom.Element>[
-      ...doc.querySelectorAll('div.poster-grid ul.grid li.griditem'),
-      ...doc.querySelectorAll(
-        'section.col-main .poster-grid ul.grid li.griditem',
-      ),
-      ...doc.querySelectorAll('section.col-main ul.grid li.griditem'),
-      ...doc.querySelectorAll('ul.grid.-p70 li.griditem'),
-      ...doc.querySelectorAll('ul.grid li.griditem'),
-      ...doc.querySelectorAll('li.poster-container'),
-    ];
-
-    final items = await _parseFilmsFromElements(candidates);
+    final visited = <String>{};
+    while (next != null &&
+        visited.add(next.toString()) &&
+        visited.length <= 500) {
+      final response = await _Http.get(next, headers: _reqHeaders);
+      if (response == null || response.statusCode != 200) {
+        throw Exception('$rating★ sayfası alınamadı');
+      }
+      final doc = html.parse(response.body);
+      final candidates = <dom.Element>[
+        ...doc.querySelectorAll('div.poster-grid ul.grid li.griditem'),
+        ...doc.querySelectorAll(
+          'section.col-main .poster-grid ul.grid li.griditem',
+        ),
+        ...doc.querySelectorAll('section.col-main ul.grid li.griditem'),
+        ...doc.querySelectorAll('ul.grid.-p70 li.griditem'),
+        ...doc.querySelectorAll('ul.grid li.griditem'),
+        ...doc.querySelectorAll('li.poster-container'),
+      ];
+      items.addAll(await _parseFilmsFromElements(candidates));
+      next = _nextProfilePage(doc, username);
+    }
 
     if (items.isEmpty) {
       final cached = prefs.getString('${_cacheKeyFor(username)}$cacheSuffix');
@@ -268,6 +279,22 @@ class LetterboxdService {
     } catch (_) {}
 
     return result;
+  }
+
+  static Uri? _nextProfilePage(dom.Document document, String username) {
+    final href = document
+        .querySelector('.paginate-nextprev a.next, a.next')
+        ?.attributes['href']
+        ?.trim();
+    if (href == null || href.isEmpty) return null;
+    final uri = Uri.parse('https://letterboxd.com/').resolve(href);
+    final prefix = '/${username.toLowerCase()}/';
+    if (uri.scheme != 'https' ||
+        uri.host != 'letterboxd.com' ||
+        !uri.path.toLowerCase().startsWith(prefix)) {
+      return null;
+    }
+    return uri;
   }
 
   static Future<List<LetterboxdFilm>> fetchHalfStar(String username) {
@@ -350,16 +377,15 @@ class LetterboxdService {
   static Future<List<LetterboxdFilm>> fetchWatchlist(String username) async {
     final prefs = await SharedPreferences.getInstance();
     final List<LetterboxdFilm> all = [];
-    int page = 1;
+    Uri? next = Uri.parse('https://letterboxd.com/$username/watchlist/');
+    final visited = <String>{};
 
-    while (page <= 3) {
-      final uri = page == 1
-          ? Uri.parse('https://letterboxd.com/$username/watchlist/')
-          : Uri.parse('https://letterboxd.com/$username/watchlist/page/$page/');
-
-      final res = await _Http.get(uri, headers: _reqHeaders);
+    while (next != null &&
+        visited.add(next.toString()) &&
+        visited.length <= 500) {
+      final res = await _Http.get(next, headers: _reqHeaders);
       if (res == null || res.statusCode != 200) {
-        if (page == 1 && all.isEmpty) {
+        if (all.isEmpty) {
           final cached = prefs.getString('${_cacheKeyFor(username)}_watchlist');
           if (cached != null) {
             return (jsonDecode(cached) as List)
@@ -386,11 +412,7 @@ class LetterboxdService {
 
       if (items.isEmpty) break;
       all.addAll(items);
-
-      final next = doc.querySelector('.paginate-nextprev a.next');
-      if (next == null) break;
-
-      page++;
+      next = _nextProfilePage(doc, username);
     }
 
     if (all.isEmpty) {
@@ -405,7 +427,11 @@ class LetterboxdService {
         jsonEncode(all.map((e) => e.toJson()).toList()),
       );
     }
-    return all;
+    final unique = <String, LetterboxdFilm>{};
+    for (final film in all) {
+      unique[film.url] = film;
+    }
+    return unique.values.toList();
   }
 
   static Future<Map<String, Map<String, dynamic>>> _upsertCatalog(
@@ -440,23 +466,190 @@ class LetterboxdService {
     required String uid,
     required String lbUsername,
     String source = 'manual',
+  }) async {
+    await requestFullSync(uid: uid, lbUsername: lbUsername, source: source);
+  }
+
+  static Future<LetterboxdSyncState> requestFullSync({
+    required String uid,
+    required String lbUsername,
+    String source = 'manual',
   }) {
     final normalizedUsername = lbUsername.trim();
     final syncKey = '$uid:${normalizedUsername.toLowerCase()}';
-    final running = _activeSyncs[syncKey];
+    final running = _activeClientSyncs[syncKey];
     if (running != null) return running;
 
-    final sync = _runTrackedSync(
+    final sync = _requestClientSync(
       uid: uid,
       lbUsername: normalizedUsername,
       source: source,
     );
-    _activeSyncs[syncKey] = sync;
+    _activeClientSyncs[syncKey] = sync;
     return sync.whenComplete(() {
-      if (identical(_activeSyncs[syncKey], sync)) {
-        _activeSyncs.remove(syncKey);
+      if (identical(_activeClientSyncs[syncKey], sync)) {
+        _activeClientSyncs.remove(syncKey);
       }
     });
+  }
+
+  static Future<LetterboxdSyncState> _requestClientSync({
+    required String uid,
+    required String lbUsername,
+    required String source,
+  }) async {
+    if (lbUsername.isEmpty) {
+      throw const LetterboxdSyncException(
+        'invalid-username',
+        'Geçerli bir Letterboxd kullanıcı adı gir.',
+      );
+    }
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.uid != uid) {
+      throw const LetterboxdSyncException(
+        'unauthenticated',
+        'Oturumun sona ermiş. Lütfen yeniden giriş yap.',
+      );
+    }
+    await _runTrackedSync(uid: uid, lbUsername: lbUsername, source: source);
+    return LetterboxdSyncState.completed;
+  }
+
+  // Sunucu tabanlı kazıma yolu geri dönüş/inceleme amacıyla tutuluyor.
+  // Letterboxd, Cloud Run isteklerine challenge HTML döndürdüğü için aktif
+  // senkronizasyon artık kullanıcının cihaz bağlantısından yapılıyor.
+  // ignore: unused_element
+  static Future<LetterboxdSyncState> _requestServerSync({
+    required String uid,
+    required String lbUsername,
+    required String source,
+  }) async {
+    if (lbUsername.isEmpty) {
+      throw const LetterboxdSyncException(
+        'invalid-username',
+        'Geçerli bir Letterboxd kullanıcı adı gir.',
+      );
+    }
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.uid != uid) {
+      throw const LetterboxdSyncException(
+        'unauthenticated',
+        'Oturumun sona ermiş. Lütfen yeniden giriş yap.',
+      );
+    }
+
+    final callable = FirebaseFunctions.instance.httpsCallable(
+      'requestLetterboxdSync',
+      options: HttpsCallableOptions(timeout: const Duration(seconds: 60)),
+    );
+    HttpsCallableResult<dynamic> response;
+    try {
+      final tokenRefresh = user.getIdToken(true);
+      final favoritesFuture = fetchFavorites(lbUsername).timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => const <LetterboxdFilm>[],
+      );
+      await tokenRefresh;
+      List<LetterboxdFilm> favorites;
+      try {
+        favorites = await favoritesFuture;
+      } catch (_) {
+        favorites = const <LetterboxdFilm>[];
+      }
+      response = await callable.call({
+        'username': lbUsername,
+        'source': source,
+        if (favorites.isNotEmpty)
+          'favorites': favorites.take(4).map((film) => film.toMap()).toList(),
+      });
+    } catch (error) {
+      if (kDebugMode && error is FirebaseFunctionsException) {
+        debugPrint(
+          'Letterboxd callable reddedildi: code=${error.code}, '
+          'message=${error.message}, details=${error.details}',
+        );
+      }
+      throw _normalizeSyncError(error);
+    }
+
+    final raw = response.data;
+    final data = raw is Map
+        ? Map<String, dynamic>.from(raw)
+        : const <String, dynamic>{};
+    final initialStatus = (data['status'] ?? '').toString();
+    if (initialStatus == 'current' || initialStatus == 'not-needed') {
+      return LetterboxdSyncState.completed;
+    }
+    final generation = (data['generation'] as num?)?.toInt();
+    if (generation == null || generation <= 0) {
+      throw const LetterboxdSyncException(
+        'invalid-response',
+        'Letterboxd senkronizasyonu başlatılamadı. Lütfen tekrar dene.',
+      );
+    }
+
+    final integration = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('integrations')
+        .doc('letterboxd');
+    try {
+      final snapshot = await integration
+          .snapshots()
+          .firstWhere((snapshot) {
+            final value = snapshot.data();
+            if (value == null ||
+                (value['generation'] as num?)?.toInt() != generation) {
+              return false;
+            }
+            final status = (value['status'] ?? '').toString();
+            return status == 'success' || status == 'failed';
+          })
+          // Tam katalog aktarımı büyük hesaplarda arka planda sürebilir. Profil
+          // düzenleme ekranını dakikalarca kilitlemeden hızlı sonucu bekle;
+          // devam ediyorsa kullanıcıya doğru biçimde "arka planda" durumunu dön.
+          .timeout(const Duration(seconds: 20));
+      final value = snapshot.data() ?? const <String, dynamic>{};
+      if (value['status'] == 'success') {
+        return LetterboxdSyncState.completed;
+      }
+      final error = value['error'];
+      final errorMap = error is Map
+          ? Map<String, dynamic>.from(error)
+          : const <String, dynamic>{};
+      throw LetterboxdSyncException(
+        (errorMap['code'] ?? 'sync-failed').toString(),
+        (errorMap['message'] ??
+                'Letterboxd verileri güncellenemedi. Lütfen tekrar dene.')
+            .toString(),
+      );
+    } on TimeoutException {
+      return LetterboxdSyncState.inProgress;
+    } catch (error) {
+      if (error is LetterboxdSyncException) rethrow;
+      throw _normalizeSyncError(error);
+    }
+  }
+
+  static Future<void> disconnect({required String uid}) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.uid != uid) {
+      throw const LetterboxdSyncException(
+        'unauthenticated',
+        'Oturumun sona ermiş. Lütfen yeniden giriş yap.',
+      );
+    }
+    try {
+      await user.getIdToken(true);
+      await FirebaseFunctions.instance
+          .httpsCallable(
+            'disconnectLetterboxd',
+            options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
+          )
+          .call();
+    } catch (error) {
+      throw _normalizeSyncError(error);
+    }
   }
 
   static Future<void> _runTrackedSync({
@@ -515,10 +708,15 @@ class LetterboxdService {
     if (error is FirebaseFunctionsException) {
       switch (error.code) {
         case 'unauthenticated':
-          return const LetterboxdSyncException(
-            'unauthenticated',
-            'Oturumun sona ermiş. Lütfen yeniden giriş yap.',
-          );
+          return FirebaseAuth.instance.currentUser == null
+              ? const LetterboxdSyncException(
+                  'unauthenticated',
+                  'Oturumun sona ermiş. Lütfen yeniden giriş yap.',
+                )
+              : const LetterboxdSyncException(
+                  'app-check-failed',
+                  'Uygulama güvenlik doğrulaması tamamlanamadı. Uygulamayı yeniden açıp tekrar dene.',
+                );
         case 'unavailable':
         case 'deadline-exceeded':
           return const LetterboxdSyncException(
@@ -526,14 +724,24 @@ class LetterboxdService {
             'Senkronizasyon servisine şu anda ulaşılamıyor. Tekrar dene.',
           );
         case 'resource-exhausted':
-          return const LetterboxdSyncException(
+          return LetterboxdSyncException(
             'rate-limited',
-            'Çok fazla senkronizasyon isteği gönderildi. Biraz sonra tekrar dene.',
+            error.message ??
+                'Çok fazla senkronizasyon isteği gönderildi. Biraz sonra tekrar dene.',
+          );
+        case 'invalid-argument':
+        case 'failed-precondition':
+        case 'permission-denied':
+          return LetterboxdSyncException(
+            error.code,
+            error.message ??
+                'Letterboxd senkronizasyonu başlatılamadı. Lütfen tekrar dene.',
           );
         default:
-          return const LetterboxdSyncException(
-            'catalog-import-failed',
-            'Film kataloğu güncellenemedi. Lütfen tekrar dene.',
+          return LetterboxdSyncException(
+            error.code,
+            error.message ??
+                'Letterboxd verileri güncellenemedi. Lütfen tekrar dene.',
           );
       }
     }
@@ -874,7 +1082,10 @@ class LetterboxdService {
             .toList();
 
         transaction.set(userRef, {
+          'letterboxdUsername': lbUsername,
+          'letterboxdUsername_lc': lbUsername.toLowerCase(),
           'lbUsername': lbUsername,
+          'pendingLetterboxdUsername': FieldValue.delete(),
           'filmSources': filmSources,
           'favoritesKeys': finalFavKeys,
           'favorites': finalFavLite,
