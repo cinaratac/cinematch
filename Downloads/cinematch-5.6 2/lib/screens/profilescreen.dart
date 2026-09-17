@@ -175,6 +175,7 @@ Widget _profileHeaderSection({
 
   final badgeIds = List<String>.from(userData?['badges'] ?? const []);
   final streakCount = (userData?['streakCount'] as num?)?.toInt() ?? 0;
+  final filmCount = profileFilmCount(userData);
   final activeDays = List<int>.from(userData?['weeklyActiveDays'] ?? const []);
 
   void showStreakDetails() {
@@ -254,22 +255,30 @@ Widget _profileHeaderSection({
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Row(
-                          children: [
-                            ProfileStat(
-                              label: 'Takipçi',
-                              value: followers,
-                              onTap: () =>
-                                  showUserList('Takipçiler', 'followers'),
-                            ),
-                            const SizedBox(width: 24),
-                            ProfileStat(
-                              label: 'Takip edilen',
-                              value: following,
-                              onTap: () =>
-                                  showUserList('Takip Edilenler', 'following'),
-                            ),
-                          ],
+                      : FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                            children: [
+                              ProfileStat(
+                                label: 'Takipçi',
+                                value: followers,
+                                onTap: () =>
+                                    showUserList('Takipçiler', 'followers'),
+                              ),
+                              const SizedBox(width: 12),
+                              ProfileStat(
+                                label: 'Takip edilen',
+                                value: following,
+                                onTap: () => showUserList(
+                                  'Takip Edilenler',
+                                  'following',
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              ProfileStat(label: 'Film', value: filmCount),
+                            ],
+                          ),
                         ),
                   if (lbUsername != null && lbUsername.isNotEmpty)
                     Padding(

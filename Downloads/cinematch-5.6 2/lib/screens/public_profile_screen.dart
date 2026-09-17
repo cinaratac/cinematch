@@ -754,6 +754,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             final activeDays = List<int>.from(
               data['weeklyActiveDays'] ?? const [],
             );
+            final filmCount = profileFilmCount(data);
 
             void showStreakDetails() {
               showModalBottomSheet(
@@ -960,26 +961,35 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                           const SizedBox(height: 7),
-                                          Row(
-                                            children: [
-                                              ProfileStat(
-                                                label: 'Takipçi',
-                                                value: _followersCount ?? 0,
-                                                onTap: () => _showUserList(
-                                                  'Takipçiler',
-                                                  'followers',
+                                          FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            alignment: Alignment.centerLeft,
+                                            child: Row(
+                                              children: [
+                                                ProfileStat(
+                                                  label: 'Takipçi',
+                                                  value: _followersCount ?? 0,
+                                                  onTap: () => _showUserList(
+                                                    'Takipçiler',
+                                                    'followers',
+                                                  ),
                                                 ),
-                                              ),
-                                              const SizedBox(width: 24),
-                                              ProfileStat(
-                                                label: 'Takip edilen',
-                                                value: _followingCount ?? 0,
-                                                onTap: () => _showUserList(
-                                                  'Takip Edilenler',
-                                                  'following',
+                                                const SizedBox(width: 12),
+                                                ProfileStat(
+                                                  label: 'Takip edilen',
+                                                  value: _followingCount ?? 0,
+                                                  onTap: () => _showUserList(
+                                                    'Takip Edilenler',
+                                                    'following',
+                                                  ),
                                                 ),
-                                              ),
-                                            ],
+                                                const SizedBox(width: 12),
+                                                ProfileStat(
+                                                  label: 'Film',
+                                                  value: filmCount,
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                           if (lb.isNotEmpty)
                                             Padding(
@@ -1235,8 +1245,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                             Positioned(
                               top:
                                   MediaQuery.of(context).padding.top +
-                                  kToolbarHeight +
-                                  10,
+                                  kToolbarHeight -
+                                  20,
                               right: 16,
                               child: Container(
                                 width: 50,

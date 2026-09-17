@@ -207,6 +207,23 @@ class ProfileStat extends StatelessWidget {
   }
 }
 
+int profileFilmCount(Map<String, dynamic>? userData) {
+  if (userData == null) return 0;
+  final rawCounts = userData['letterboxdCounts'];
+  final syncedCount = rawCounts is Map
+      ? (rawCounts['films'] as num?)?.toInt() ?? 0
+      : 0;
+  final watched = userData['watchedKeys'];
+  final watchedCount = watched is List
+      ? watched
+            .map((value) => value.toString())
+            .where((key) => key.isNotEmpty)
+            .toSet()
+            .length
+      : 0;
+  return syncedCount > watchedCount ? syncedCount : watchedCount;
+}
+
 class ProfilePreferenceSection extends StatelessWidget {
   const ProfilePreferenceSection({
     super.key,

@@ -323,6 +323,21 @@ class LetterboxdService {
     return _fetchRated(username, '5', cacheSuffix: '_rated5');
   }
 
+  static Future<List<LetterboxdFilm>> fetchLovedFilms(String username) async {
+    final results = await Future.wait([
+      _fetchRated(username, '4', cacheSuffix: '_rated4'),
+      _fetchRated(username, '4.5', cacheSuffix: '_rated45'),
+      fetchFiveStar(username),
+    ]);
+    final unique = <String, LetterboxdFilm>{};
+    for (final films in results) {
+      for (final film in films) {
+        unique[film.url] = film;
+      }
+    }
+    return unique.values.toList();
+  }
+
   static Future<List<LetterboxdFilm>> fetchFavorites(String username) async {
     final prefs = await SharedPreferences.getInstance();
     try {
@@ -775,7 +790,7 @@ class LetterboxdService {
     final favs = await fetchFavorites(lbUsername);
 
     final results = await Future.wait([
-      fetchFiveStar(lbUsername),
+      fetchLovedFilms(lbUsername),
       fetchDisliked(lbUsername),
       fetchWatchlist(lbUsername),
     ]);
